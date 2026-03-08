@@ -129,23 +129,6 @@ const BaseNode: React.FC<CustomNodeProps> = ({ data, selected }) => {
         )}
       </div>
 
-      {/*
-        ══════════════════════════════════════════════════════════════════
-        CONNECTION HANDLES — Mindmap style
-
-        • Handles are subtle (hollow, semi-transparent) when the node
-          is idle. They glow and fill solid when you hover the node,
-          making connection points obvious without clutter.
-
-        • EVERY node has BOTH a Left (target) and Right (source) handle
-          so any node can connect to any other node.
-
-        • Do NOT set right/left/top/bottom/transform in handleStyle —
-          React Flow's CSS classes own those. Adding them here breaks
-          the connection hit-testing.
-        ══════════════════════════════════════════════════════════════════
-      */}
-
       {/* LEFT — incoming (target) */}
       <Handle
         type="target"

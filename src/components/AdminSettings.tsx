@@ -14,6 +14,7 @@ interface SystemSettings {
 const Settings: React.FC = () => {
   const { showSuccess, showError } = useToast();
   const [settings, setSettings] = useState<SystemSettings | null>(null);
+  const [consoleEnabled, setConsoleEnabled] = useState(true);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -206,8 +207,37 @@ const Settings: React.FC = () => {
         </div>
       </div>
 
+      {/* System Activity Console Toggle */}
+      <div className="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-[32px] border border-gray-200 dark:border-gray-700 shadow-xl transition-all duration-300 hover:shadow-2xl">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 md:gap-0">
+          <div className="flex items-center space-x-4">
+            <div className={`p-3 md:p-4 rounded-2xl shrink-0 ${consoleEnabled ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>
+              <FiTerminal className="w-6 h-6 md:w-8 md:h-8" />
+            </div>
+            <div>
+              <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">System Activity Console</h2>
+              <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">Show or hide the system activity monitoring console</p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => {
+              setConsoleEnabled(!consoleEnabled);
+              logActivity("UPDATE", "Settings", `System Console ${!consoleEnabled ? 'Enabled' : 'Disabled'}`);
+            }}
+            className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors duration-300 focus:outline-none self-end md:self-auto ${consoleEnabled ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-600"
+              }`}
+          >
+            <span
+              className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform duration-300 ${consoleEnabled ? "translate-x-7" : "translate-x-1"
+                }`}
+            />
+          </button>
+        </div>
+      </div>
+
       {/* System Activity Console */}
-      <SystemConsole />
+      {consoleEnabled && <SystemConsole />}
     </div>
   );
 };

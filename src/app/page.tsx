@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useSyncExternalStore } from "react";
+import React, { useState, useEffect, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -13,11 +13,13 @@ import {
     FiTrendingUp,
     FiRefreshCw,
     FiArrowUpCircle,
+    FiArrowUp,
     FiList
 } from "react-icons/fi";
 import ThemeComponent from "@/components/ThemeComponent";
-import LiquidChrome from "@/components/LightRays";
+import dynamic from "next/dynamic";
 import { useTheme } from "@/context/themeContext";
+const LiquidChrome = dynamic(() => import("@/components/LightRays"), { ssr: false });
 
 export const FadeUp = ({ children, delay = 0, className = "" }: { children: React.ReactNode, delay?: number, className?: string }) => (
     <motion.div
@@ -132,6 +134,20 @@ const marqueeItems = ["React 19", "TypeScript", "Tailwind CSS v4", "Next.js", "M
 export default function HomePage() {
     const router = useRouter();
     const { theme } = useTheme();
+    const [showScrollTop, setShowScrollTop] = useState(false);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setShowScrollTop(window.scrollY > 300);
+        };
+        window.addEventListener("scroll", handleScroll, { passive: true });
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, []);
+
+    const scrollToTop = () => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
     // Pro-pattern: Use useSyncExternalStore to detect hydration/client-side status 
     // without triggering cascading render warnings in strict environments.
     const hasHydrated = useSyncExternalStore(
@@ -351,7 +367,7 @@ export default function HomePage() {
                                     <div className="flex items-center gap-4 w-full sm:w-auto">
                                         <div className="w-10 h-10 shrink-0 bg-gray-200 dark:bg-white/10 rounded-full border border-gray-300 dark:border-white/20"></div>
                                         <div>
-                                            <div className="text-gray-900 dark:text-white text-sm font-bold">John Doe</div>
+                                            <div className="text-gray-900 dark:text-white text-sm font-bold">Ram Phoogat</div>
                                             <div className="text-gray-500 text-xs">{"Requested 'Author' upgrade"}</div>
                                         </div>
                                     </div>
@@ -474,6 +490,25 @@ export default function HomePage() {
                     © 2026 AuthSystem. Designed for scale.
                 </div>
             </footer>
+            {/* Scroll-to-top button */}
+            <AnimatePresence>
+                {showScrollTop && (
+                    <motion.button
+                        key="scroll-to-top"
+                        initial={{ opacity: 0, y: 20, scale: 0.8 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 20, scale: 0.8 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                        onClick={scrollToTop}
+                        aria-label="Scroll to top"
+                        className="fixed bottom-8 right-8 z-50 w-12 h-12 rounded-2xl dark:bg-black bg-white dark:text-white text-black shadow-[0_8px_30px_rgba(0,0,0,0.15)] hover:shadow-[0_8px_40px_rgba(0,0,0,0.25)] dark:shadow-[0_8px_30px_rgba(255,255,255,0.12)] dark:hover:shadow-[0_8px_40px_rgba(255,255,255,0.22)] flex items-center justify-center transition-all duration-200 group active:scale-95"
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                    >
+                        <FiArrowUp className="w-5 h-5 transition-transform duration-200 group-hover:-translate-y-0.5" />
+                    </motion.button>
+                )}
+            </AnimatePresence>
         </main>
     );
 }

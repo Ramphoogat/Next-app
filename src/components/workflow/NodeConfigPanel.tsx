@@ -480,7 +480,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
         </h4>
         {renderConfig(
           selectedNode.data.nodeType,
-          selectedNode.data.config,
+          selectedNode.data.config ?? {},
           handleConfigUpdate
         )}
       </div>

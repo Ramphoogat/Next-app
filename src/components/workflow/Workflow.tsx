@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { IWorkflow, WorkflowStatus } from '@/types/workflow';
 import WorkflowBuilder from '@/components/workflow/WorkflowBuilder';
+import { WorkflowGuide } from '@/components/workflow/WorkflowToolbar';
 import { useToast } from '@/components/ToastProvider';
 
 // ─── Confirm Dialog ───────────────────────────────────────────────────────
@@ -503,19 +504,35 @@ interface EditorHeaderProps {
   workflowName: string;
   onBack: () => void;
 }
-const EditorHeader: React.FC<EditorHeaderProps> = ({ workflowName, onBack }) => (
-  <div className="flex items-center gap-2 mb-0 px-0 py-3 border-b border-gray-200 dark:border-gray-700">
-    <button
-      onClick={onBack}
-      className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors group"
-    >
-      <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-      <span>Workflows</span>
-    </button>
-    <span className="text-gray-300 dark:text-gray-600">/</span>
-    <span className="text-sm font-semibold text-gray-900 dark:text-white truncate max-w-xs">{workflowName}</span>
-  </div>
-);
+const EditorHeader: React.FC<EditorHeaderProps> = ({ workflowName, onBack }) => {
+  const [guideOpen, setGuideOpen] = useState(false);
+  return (
+    <>
+      <div className="flex items-center gap-2 mb-0 px-0 py-3 border-b border-gray-200 dark:border-gray-700">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors group"
+        >
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+          <span>Workflows</span>
+        </button>
+        <span className="text-gray-300 dark:text-gray-600">/</span>
+        <span className="text-sm font-semibold text-gray-900 dark:text-white truncate max-w-xs">{workflowName}</span>
+
+        {/* ? Guide button — right next to breadcrumb */}
+        <button
+          onClick={() => setGuideOpen(true)}
+          title="Workflow Guide"
+          className="ml-auto flex items-center justify-center w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/25 border border-blue-200 dark:border-blue-500/30 transition-colors font-black text-sm leading-none"
+        >
+          ?
+        </button>
+      </div>
+
+      {guideOpen && <WorkflowGuide onClose={() => setGuideOpen(false)} />}
+    </>
+  );
+};
 
 // ─── Main Workflow Component ───────────────────────────────────────────────
 const Workflow: React.FC = () => {

@@ -9,6 +9,7 @@ import { FaGoogle, FaGithub } from "react-icons/fa";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { useToast } from "@/components/ToastProvider";
 import { useNotifications } from "@/context/NotificationContext";
+import Loader from "@/components/Loader";
 
 const Login = () => {
   const [identifier, setIdentifier] = useState(""); // email or username
@@ -23,6 +24,16 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Detect OAuth callback immediately on first render to avoid flashing the login form.
+  // We read window.location.search synchronously inside useState initializer so the
+  // loading screen is shown on the very first paint, before useEffect even runs.
+  const [isSocialLoading, setIsSocialLoading] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    const params = new URLSearchParams(window.location.search);
+    return params.has("token") || params.has("error");
+  });
+  const [socialProvider, setSocialProvider] = useState<string>("Social");
+
   const router = useRouter();
 
   const socialAuthProcessed = React.useRef(false);
@@ -35,18 +46,16 @@ const Login = () => {
     const token = queryParams.get("token");
     const role = queryParams.get("role");
     const error = queryParams.get("error");
+    // Detect which provider from referrer or a `provider` param if your backend sends it
+    const provider = queryParams.get("provider") || "Social";
+    if (provider) setSocialProvider(provider.charAt(0).toUpperCase() + provider.slice(1));
 
     if (token) {
       socialAuthProcessed.current = true;
-      if (rememberMe) {
-        localStorage.setItem("token", token);
-        if (role) localStorage.setItem("role", role);
-        localStorage.setItem("last_user", "Social User"); // Placeholder
-      } else {
-        localStorage.setItem("token", token);
-        if (role) localStorage.setItem("role", role);
-        localStorage.setItem("last_user", "Social User");
-      }
+      setIsSocialLoading(true);
+      localStorage.setItem("token", token);
+      if (role) localStorage.setItem("role", role);
+      localStorage.setItem("last_user", "Social User");
 
       showSuccess("Logged in via Social Media!");
       addNotification({
@@ -58,22 +67,31 @@ const Login = () => {
       // Clean URL
       window.history.replaceState({}, document.title, window.location.pathname);
 
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 100);
+      router.push("/dashboard");
     }
 
     if (error) {
       socialAuthProcessed.current = true;
+      setIsSocialLoading(false);
       alert(error);
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, [showSuccess, addNotification, rememberMe, router]);
 
   const handleSocialLogin = (provider: string) => {
+    sessionStorage.setItem("oauth_provider", provider);
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
     window.location.href = `${API_URL}/auth/${provider}`;
   };
+
+  // ── OAuth Loading Screen ──────────────────────────────────────────────────
+  if (isSocialLoading) {
+    const provider = typeof window !== "undefined"
+      ? (sessionStorage.getItem("oauth_provider") || socialProvider)
+      : socialProvider;
+    const providerLabel = provider.charAt(0).toUpperCase() + provider.slice(1);
+    return <Loader fullScreen text={`Signing you in via ${providerLabel}…`} />;
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -309,29 +327,7 @@ const Login = () => {
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <span className="flex items-center">
-                    <svg
-                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-current"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    Loading...
-                  </span>
+                  <Loader size={20} />
                 ) : (
                   <>
                     <span>Next</span>
@@ -405,29 +401,7 @@ const Login = () => {
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <span className="flex items-center">
-                    <svg
-                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-current"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    Verifying...
-                  </span>
+                  <Loader size={20} />
                 ) : (
                   <>
                     <span>Verify & Login</span>

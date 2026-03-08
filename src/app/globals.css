@@ -1,6 +1,5 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+/* Font is managed by next/font/google in layout.tsx for optimal loading */
 @import "tailwindcss";
-
 
 /* We don't need the @theme block here if we are defining variables in base layer and using them in tailwind.config.js, 
    but since this project seems to use a mix of v3/v4 styles (v4 import "tailwindcss" implies v4, but config file implies v3 compat),
@@ -64,7 +63,6 @@
   }
 }
 
-
 /* ... existing styles ... */
 /* Ensure dark mode works with 'dark' class in Tailwind v4 */
 @variant dark (&:where(.dark, .dark *));
@@ -83,7 +81,7 @@ body::-webkit-scrollbar {
 }
 
 body {
-  font-family: "Inter", Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-inter), Roboto, Helvetica, Arial, sans-serif;
   margin: 0;
   overflow-x: hidden;
   -webkit-tap-highlight-color: transparent;
@@ -288,8 +286,14 @@ html.brutalist svg {
  * MACOS THEME OVERRIDES
  *******************************************************/
 html.macos body {
-  background: radial-gradient(circle at 50% 50%, #e0e5ec 0%, #f0f4f8 100%) !important;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  background: radial-gradient(
+    circle at 50% 50%,
+    #e0e5ec 0%,
+    #f0f4f8 100%
+  ) !important;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif !important;
   color: #1d1d1f !important;
 }
 
@@ -320,10 +324,18 @@ html.macos .border-gray-700 {
 /* Buttons */
 html.macos button:not(.theme-switch),
 html.macos .btn {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.1) 100%), #007aff !important;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.4) 0%,
+      rgba(255, 255, 255, 0.1) 100%
+    ),
+    #007aff !important;
   color: white !important;
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+  box-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
   font-weight: 500 !important;
 }
@@ -341,7 +353,7 @@ html.macos button:not(.theme-switch):active {
 
 /* Theme Toggle Button Specific Overrides (avoid conflicting with general button style too much) */
 html.macos .theme-toggle-btn {
-   background: rgba(255,255,255,0.5) !important;
+  background: rgba(255, 255, 255, 0.5) !important;
 }
 
 /* Inputs */
@@ -363,7 +375,9 @@ html.macos input:focus {
 }
 
 /* Text styling */
-html.macos h1, html.macos h2, html.macos h3 {
+html.macos h1,
+html.macos h2,
+html.macos h3 {
   font-weight: 600 !important; /* MacOS uses slightly lighter bold */
   letter-spacing: -0.01em !important;
   color: #1d1d1f !important;
@@ -385,24 +399,33 @@ html.macos nav {
 /* Icons */
 html.macos svg {
   stroke-width: 2px !important;
-  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.05));
-  color: #1d1d1f !important; 
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.05));
+  color: #1d1d1f !important;
 }
 
 /*******************************************************
  * TERMINAL THEME OVERRIDES
  *******************************************************/
 html.terminal body {
-    background-color: #0d1117 !important;
-    color: #39d353 !important;
-    font-family: "Fira Code", "Courier New", Courier, monospace !important;
-    background-image: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-    background-size: 100% 2px, 3px 100%;
+  background-color: #0d1117 !important;
+  color: #39d353 !important;
+  font-family: "Fira Code", "Courier New", Courier, monospace !important;
+  background-image:
+    linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+    linear-gradient(
+      90deg,
+      rgba(255, 0, 0, 0.06),
+      rgba(0, 255, 0, 0.02),
+      rgba(0, 0, 255, 0.06)
+    );
+  background-size:
+    100% 2px,
+    3px 100%;
 }
 
 html.terminal * {
-    border-radius: 0 !important;
-    box-shadow: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
 }
 
 /* Containers */
@@ -412,74 +435,82 @@ html.terminal aside,
 html.terminal .glass-card,
 html.terminal .bg-white,
 html.terminal .bg-gray-800 {
-    background-color: #000 !important;
-    border: 1px solid #39d353 !important;
-    color: #39d353 !important;
+  background-color: #000 !important;
+  border: 1px solid #39d353 !important;
+  color: #39d353 !important;
 }
 
-html.terminal .bg-gray-50, html.terminal .bg-gray-100 {
-    background-color: #0d1117 !important;
+html.terminal .bg-gray-50,
+html.terminal .bg-gray-100 {
+  background-color: #0d1117 !important;
 }
 
 /* Buttons */
 html.terminal button:not(.theme-switch),
 html.terminal .btn {
-    background: transparent !important;
-    border: 1px solid #39d353 !important;
-    color: #39d353 !important;
-    text-transform: uppercase;
-    font-weight: bold;
+  background: transparent !important;
+  border: 1px solid #39d353 !important;
+  color: #39d353 !important;
+  text-transform: uppercase;
+  font-weight: bold;
 }
 
 html.terminal button:not(.theme-switch):hover {
-    background-color: #39d353 !important;
-    color: #000 !important;
+  background-color: #39d353 !important;
+  color: #000 !important;
 }
 
 /* Inputs */
 html.terminal input,
 html.terminal textarea,
 html.terminal select {
-    background-color: #000 !important;
-    border: 1px solid #39d353 !important;
-    color: #39d353 !important;
-    font-family: monospace;
+  background-color: #000 !important;
+  border: 1px solid #39d353 !important;
+  color: #39d353 !important;
+  font-family: monospace;
 }
 
 html.terminal input:focus {
-    outline: none;
-    border-color: #fff !important;
-    box-shadow: 0 0 5px #39d353 !important;
+  outline: none;
+  border-color: #fff !important;
+  box-shadow: 0 0 5px #39d353 !important;
 }
 
 /* Typography */
-html.terminal h1, html.terminal h2, html.terminal h3, html.terminal p, html.terminal span, html.terminal div {
-    color: #39d353 !important;
+html.terminal h1,
+html.terminal h2,
+html.terminal h3,
+html.terminal p,
+html.terminal span,
+html.terminal div {
+  color: #39d353 !important;
 }
 
 html.terminal .text-gray-500,
 html.terminal .text-gray-400,
 html.terminal .text-gray-600 {
-    color: #2ea043 !important;
+  color: #2ea043 !important;
 }
 
 /* Links */
 html.terminal a {
-    text-decoration: underline;
-    color: #58a6ff !important;
+  text-decoration: underline;
+  color: #58a6ff !important;
 }
 
 /* Icons */
 html.terminal svg {
-    color: #39d353 !important;
+  color: #39d353 !important;
 }
 
 /* Terminal Cursor Effect (Simple) */
 html.terminal h1::after {
-    content: '_';
-    animation: blink 1s step-end infinite;
+  content: "_";
+  animation: blink 1s step-end infinite;
 }
 
 @keyframes blink {
-    50% { opacity: 0; }
+  50% {
+    opacity: 0;
+  }
 }

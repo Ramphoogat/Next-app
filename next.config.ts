@@ -11,6 +11,7 @@ try {
 } catch {
   // Ignore
 }
+
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
@@ -27,6 +28,16 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: '**',
       },
+    ],
+  },
+  experimental: {
+    // Tree-shake icon libraries and framer-motion — prevents shipping all
+    // 7000+ lucide icons or all react-icons variants in the bundle.
+    optimizePackageImports: [
+      'react-icons',
+      'lucide-react',
+      'framer-motion',
+      '@radix-ui/react-slot',
     ],
   },
 };

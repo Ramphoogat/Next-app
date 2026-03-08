@@ -23,17 +23,19 @@ import FormSection from "@/components/FormSection";
 import Requests from "@/components/requests";
 import CreateUserModal from "@/components/CreateUserModal";
 
-import Settings from "@/components/AdminSettings";
-import Kanban from "@/components/Kanban";
-import Calendar from "@/components/calendar_ui/Calendar";
-import Chats from "@/components/chats/Chats";
-import N8nWorkflow from "@/components/workflow/Workflow";
 import { useToast } from "@/components/ToastProvider";
 import { logActivity } from "@/utils/activityLogger";
 import { useDashboardSlug } from "@/components/url_slug";
 import {
     UserManagementRow,
 } from "./AdminComponents";
+import dynamic from "next/dynamic";
+
+const Settings = dynamic(() => import("@/components/AdminSettings"), { ssr: false, loading: () => <Loader text="Loading settings..." /> });
+const Kanban = dynamic(() => import("@/components/Kanban"), { ssr: false, loading: () => <Loader text="Loading Kanban..." /> });
+const Calendar = dynamic(() => import("@/components/calendar_ui/Calendar"), { ssr: false, loading: () => <Loader text="Loading Calendar..." /> });
+const Chats = dynamic(() => import("@/components/chats/Chats"), { ssr: false, loading: () => <Loader text="Loading Chats..." /> });
+const N8nWorkflow = dynamic(() => import("@/components/workflow/Workflow"), { ssr: false, loading: () => <Loader text="Loading Workflow..." /> });
 import { type IUser, type IAdminStats } from "@/types/dashboard";
 import { BsFillKanbanFill } from "react-icons/bs";
 import { TbArrowsExchange2 } from "react-icons/tb";
@@ -261,7 +263,7 @@ const AdminDashboard = () => {
         { icon: <FiLayout />, label: "Role Request Form", id: "Form" },
         { icon: <FiShield />, label: "Requests", id: "Requests" },
         { icon: <FiMessageSquare />, label: "Chats", id: "Chats" },
-        { icon: <TbArrowsExchange2 />, label: "n8n Workflow", id: "N8nWorkflow" },
+        { icon: <TbArrowsExchange2 />, label: "Workflow", id: "N8nWorkflow" },
         { icon: <FiCalendar />, label: "Calendar", id: "Calendar" },
         { icon: <BsFillKanbanFill />, label: "Kanban", id: "Kanban" },
         { icon: <FiSettings />, label: "Settings", id: "Settings" },
