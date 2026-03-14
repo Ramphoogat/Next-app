@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import SidebarComponent from "@/components/SidebarComponent";
 import Navbar from "@/components/Navbar";
-import { type INotification } from "@/pages_old/users/UsersComponents";
+import { INotification } from "@/types/dashboard";
 
 
 

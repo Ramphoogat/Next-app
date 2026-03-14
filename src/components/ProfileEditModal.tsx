@@ -102,7 +102,7 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
         onClick={onClose}
       />
 
-      {/* ── Left Panel (blank — to be filled later) ─────────────────────── */}
+      {/* ── Left Panel blank — to be filled later*/}
       <div
         className={`fixed top-0 left-0 bottom-0 z-[95] w-full max-w-xs flex flex-col
           bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl
@@ -124,11 +124,8 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
         {/* Blank area — reserved for future content */}
         <div className="flex-1 flex items-center justify-center px-6 pb-10">
           <div className="text-center space-y-3">
-            <div className="size-16 rounded-3xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto border border-gray-200 dark:border-gray-700">
-              <FiUser className="w-7 h-7 text-gray-300 dark:text-gray-600" />
-            </div>
             <p className="text-[11px] font-bold text-gray-300 dark:text-gray-600 uppercase tracking-widest">
-              Coming Soon
+              Update Soon
             </p>
           </div>
         </div>

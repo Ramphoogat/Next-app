@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, type ChangeEvent } from "react";
+import dynamic from "next/dynamic";
 import api from "@/api/axios";
 import axios from "axios";
 import { useRouter } from "next/navigation";
@@ -258,5 +259,4 @@ const Signup = () => {
     </div>
   );
 };
-
-export default Signup;
+export default dynamic(() => Promise.resolve(Signup), { ssr: false });

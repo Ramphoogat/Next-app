@@ -9,6 +9,8 @@ import { IWorkflow, WorkflowStatus } from '@/types/workflow';
 import WorkflowBuilder from '@/components/workflow/WorkflowBuilder';
 import { WorkflowGuide } from '@/components/workflow/WorkflowToolbar';
 import { useToast } from '@/components/ToastProvider';
+import Templates from './templates';
+import { convertN8nTemplateToWorkflow, IN8nTemplate } from './templateUtils';
 
 // ─── Confirm Dialog ───────────────────────────────────────────────────────
 interface ConfirmDialogProps {
@@ -337,6 +339,9 @@ const EmptyState: React.FC<{ onCreate: () => void }> = ({ onCreate }) => (
 
 // ─── Workflow List View ────────────────────────────────────────────────────
 interface WorkflowListViewProps {
+  activeTab: 'workflows' | 'templates';
+  onTabChange: (tab: 'workflows' | 'templates') => void;
+  onUseTemplate: (template: IN8nTemplate) => void;
   workflows: IWorkflow[];
   isLoading: boolean;
   searchQuery: string;
@@ -356,13 +361,14 @@ interface WorkflowListViewProps {
 }
 
 const WorkflowListView: React.FC<WorkflowListViewProps> = ({
+  activeTab, onTabChange, onUseTemplate,
   workflows, isLoading, searchQuery, statusFilter, filterMenuOpen,
   onSearchChange, onFilterChange, onFilterMenuToggle, onFilterMenuClose,
   onCreate, onEdit, onDelete, onDuplicate, onRename, onToggleStatus, onRun,
 }) => (
   <div className="h-full flex flex-col">
     {/* Header */}
-    <div className="flex items-center justify-between mb-6">
+    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
       <div>
         <h1 className="text-2xl font-black text-gray-900 dark:text-white">
           Workflow Automation
@@ -371,46 +377,70 @@ const WorkflowListView: React.FC<WorkflowListViewProps> = ({
           Build and manage your automation workflows
         </p>
       </div>
-      <button
-        onClick={onCreate}
-        className="
-          flex items-center gap-2 px-4 py-2.5 rounded-xl
-          bg-gradient-to-r from-emerald-500 to-emerald-600
-          text-white font-semibold text-sm
-          hover:from-emerald-600 hover:to-emerald-700
-          shadow-lg shadow-emerald-500/25
-          transition-all duration-200
-        "
-      >
-        <Plus className="w-4 h-4" />
-        New Workflow
-      </button>
+
+      <div className="flex items-center gap-3">
+        <div className="p-1 bg-gray-200/60 dark:bg-gray-800/60 rounded-xl flex items-center">
+          <button
+            onClick={() => onTabChange('workflows')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'workflows' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
+          >
+            My Workflows
+          </button>
+          <button
+            onClick={() => onTabChange('templates')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'templates' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
+          >
+            Templates
+          </button>
+        </div>
+
+        <button
+          onClick={onCreate}
+          className="
+            flex items-center gap-2 px-4 py-2.5 rounded-xl
+            bg-gradient-to-r from-emerald-500 to-emerald-600
+            text-white font-semibold text-sm
+            hover:from-emerald-600 hover:to-emerald-700
+            shadow-lg shadow-emerald-500/25
+            transition-all duration-200
+          "
+        >
+          <Plus className="w-4 h-4" />
+          Create Workflow
+        </button>
+      </div>
     </div>
 
-    {/* Filters */}
-    <div className="flex items-center gap-3 mb-6">
-      <div className="flex-1 relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input
-          type="text"
-          placeholder="Search workflows..."
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="
+    {activeTab === 'templates' ? (
+      <div className="flex-1 overflow-y-auto w-full">
+        <Templates onUseTemplate={onUseTemplate} />
+      </div>
+    ) : (
+      <>
+        {/* Filters */}
+        <div className="flex items-center gap-3 mb-6">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search workflows..."
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="
             w-full pl-10 pr-4 py-2.5 rounded-xl text-sm
             bg-white dark:bg-gray-800
             border border-gray-200 dark:border-gray-700
             text-gray-900 dark:text-white placeholder-gray-400
-            focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500
+            focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500
             transition-all
           "
-        />
-      </div>
+            />
+          </div>
 
-      <div className="relative">
-        <button
-          onClick={onFilterMenuToggle}
-          className="
+          <div className="relative">
+            <button
+              onClick={onFilterMenuToggle}
+              className="
             flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm
             bg-white dark:bg-gray-800
             border border-gray-200 dark:border-gray-700
@@ -418,84 +448,86 @@ const WorkflowListView: React.FC<WorkflowListViewProps> = ({
             hover:border-gray-300 dark:hover:border-gray-600
             transition-all
           "
-        >
-          <Filter className="w-4 h-4" />
-          <span>{statusFilter === 'all' ? 'All Status' : statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}</span>
-          <ChevronDown className="w-4 h-4" />
-        </button>
+            >
+              <Filter className="w-4 h-4" />
+              <span>{statusFilter === 'all' ? 'All Status' : statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}</span>
+              <ChevronDown className="w-4 h-4" />
+            </button>
 
-        {filterMenuOpen && (
-          <>
-            <div className="fixed inset-0 z-10" onClick={onFilterMenuClose} />
-            <div className="
+            {filterMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={onFilterMenuClose} />
+                <div className="
               absolute right-0 mt-2 w-40 py-2 z-20
               bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700
             ">
-              {(['all', 'draft', 'active', 'paused', 'error'] as const).map((s) => (
-                <button
-                  key={s}
-                  onClick={() => { onFilterChange(s); onFilterMenuClose(); }}
-                  className={`
+                  {(['all', 'draft', 'active', 'paused', 'error'] as const).map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => { onFilterChange(s); onFilterMenuClose(); }}
+                      className={`
                     w-full px-4 py-2 text-left text-sm
                     hover:bg-gray-50 dark:hover:bg-gray-700
-                    ${statusFilter === s ? 'text-orange-600 dark:text-orange-400 font-semibold' : 'text-gray-700 dark:text-gray-300'}
+                    ${statusFilter === s ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-gray-700 dark:text-gray-300'}
                   `}
-                >
-                  {s === 'all' ? 'All Status' : s.charAt(0).toUpperCase() + s.slice(1)}
-                </button>
+                    >
+                      {s === 'all' ? 'All Status' : s.charAt(0).toUpperCase() + s.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Stats row */}
+        {!isLoading && workflows.length > 0 && (
+          <div className="flex items-center gap-3 mb-4">
+            {[
+              { label: 'Total', count: workflows.length, color: 'text-gray-600 dark:text-gray-400' },
+              { label: 'Active', count: workflows.filter(w => w.status === 'active').length, color: 'text-emerald-600 dark:text-emerald-400' },
+              { label: 'Draft', count: workflows.filter(w => w.status === 'draft').length, color: 'text-gray-500 dark:text-gray-500' },
+              { label: 'Paused', count: workflows.filter(w => w.status === 'paused').length, color: 'text-amber-600 dark:text-amber-400' },
+            ].map(stat => (
+              <div key={stat.label} className="flex items-center gap-1.5 text-xs">
+                <span className={`font-bold ${stat.color}`}>{stat.count}</span>
+                <span className="text-gray-400">{stat.label}</span>
+                {stat.label !== 'Paused' && <span className="text-gray-200 dark:text-gray-700">·</span>}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Grid */}
+        <div className="flex-1 overflow-y-auto">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-500 mx-auto mb-3" />
+                <p className="text-sm text-gray-500 dark:text-gray-400">Loading your workflows...</p>
+              </div>
+            </div>
+          ) : workflows.length === 0 ? (
+            <EmptyState onCreate={onCreate} />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 pb-4">
+              {workflows.map((workflow) => (
+                <WorkflowCard
+                  key={workflow._id}
+                  workflow={workflow}
+                  onEdit={onEdit}
+                  onDelete={onDelete}
+                  onDuplicate={onDuplicate}
+                  onRename={onRename}
+                  onToggleStatus={onToggleStatus}
+                  onRun={onRun}
+                />
               ))}
             </div>
-          </>
-        )}
-      </div>
-    </div>
-
-    {/* Stats row */}
-    {!isLoading && workflows.length > 0 && (
-      <div className="flex items-center gap-3 mb-4">
-        {[
-          { label: 'Total', count: workflows.length, color: 'text-gray-600 dark:text-gray-400' },
-          { label: 'Active', count: workflows.filter(w => w.status === 'active').length, color: 'text-emerald-600 dark:text-emerald-400' },
-          { label: 'Draft', count: workflows.filter(w => w.status === 'draft').length, color: 'text-gray-500 dark:text-gray-500' },
-          { label: 'Paused', count: workflows.filter(w => w.status === 'paused').length, color: 'text-amber-600 dark:text-amber-400' },
-        ].map(stat => (
-          <div key={stat.label} className="flex items-center gap-1.5 text-xs">
-            <span className={`font-bold ${stat.color}`}>{stat.count}</span>
-            <span className="text-gray-400">{stat.label}</span>
-            {stat.label !== 'Paused' && <span className="text-gray-200 dark:text-gray-700">·</span>}
-          </div>
-        ))}
-      </div>
+          )}
+        </div>
+      </>
     )}
-
-    {/* Grid */}
-    <div className="flex-1 overflow-y-auto">
-      {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-500 mx-auto mb-3" />
-            <p className="text-sm text-gray-500 dark:text-gray-400">Loading your workflows...</p>
-          </div>
-        </div>
-      ) : workflows.length === 0 ? (
-        <EmptyState onCreate={onCreate} />
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 pb-4">
-          {workflows.map((workflow) => (
-            <WorkflowCard
-              key={workflow._id}
-              workflow={workflow}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              onDuplicate={onDuplicate}
-              onRename={onRename}
-              onToggleStatus={onToggleStatus}
-              onRun={onRun}
-            />
-          ))}
-        </div>
-      )}
-    </div>
   </div>
 );
 
@@ -542,6 +574,7 @@ const Workflow: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<WorkflowStatus | 'all'>('all');
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'workflows' | 'templates'>('workflows');
 
   // Inline editor state
   const [editingWorkflow, setEditingWorkflow] = useState<IWorkflow | null>(null);
@@ -604,6 +637,34 @@ const Workflow: React.FC = () => {
     } catch (error) {
       console.error('Failed to create workflow:', error);
       showError('Failed to create workflow');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleUseTemplate = async (template: IN8nTemplate) => {
+    setIsCreating(true);
+    try {
+      const { nodes, edges } = convertN8nTemplateToWorkflow(template);
+      const response = await fetch('/api/workflows', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          name: template.name || 'Untitled Workflow',
+          nodes,
+          edges,
+        }),
+      });
+      const data = await response.json();
+      if (data.success && data.data) {
+        setEditingWorkflow(data.data);
+        showSuccess('Workflow created from template!');
+      } else {
+        showError('Failed to create workflow from template');
+      }
+    } catch (error) {
+      console.error('Failed to create workflow from template:', error);
+      showError('Failed to create workflow from template');
     } finally {
       setIsCreating(false);
     }
@@ -808,6 +869,8 @@ const Workflow: React.FC = () => {
   return (
     <>
       <WorkflowListView
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
         workflows={workflows}
         isLoading={isLoading || isCreating}
         searchQuery={searchQuery}
@@ -824,6 +887,7 @@ const Workflow: React.FC = () => {
         onRename={handleRenameWorkflow}
         onToggleStatus={handleToggleStatus}
         onRun={handleRunWorkflow}
+        onUseTemplate={handleUseTemplate}
       />
 
       {/* Confirm dialog — renders above the list */}

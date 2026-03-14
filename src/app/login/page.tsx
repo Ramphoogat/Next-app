@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import api from "@/api/axios";
 import axios from "axios";
 import { useRouter } from "next/navigation";
@@ -24,9 +25,6 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Detect OAuth callback immediately on first render to avoid flashing the login form.
-  // We read window.location.search synchronously inside useState initializer so the
-  // loading screen is shown on the very first paint, before useEffect even runs.
   const [isSocialLoading, setIsSocialLoading] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     const params = new URLSearchParams(window.location.search);
@@ -464,5 +462,4 @@ const Login = () => {
     </div>
   );
 };
-
-export default Login;
+export default dynamic(() => Promise.resolve(Login), { ssr: false });

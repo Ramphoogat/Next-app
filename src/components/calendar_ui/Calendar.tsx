@@ -12,6 +12,9 @@ import {
     subMonths,
     subWeeks,
     subYears,
+    format,
+    startOfWeek,
+    endOfWeek,
 } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import {
@@ -343,7 +346,7 @@ const CalendarTodayTrigger = forwardRef<
 CalendarTodayTrigger.displayName = 'CalendarTodayTrigger';
 
 const CalendarCurrentDate = () => {
-    const { date, setDate } = useCalendar();
+    const { date, setDate, view } = useCalendar();
     const [isYearOpen, setIsYearOpen] = useState(false);
     const [isMonthOpen, setIsMonthOpen] = useState(false);
     const yearRef = useRef<HTMLDivElement>(null);
@@ -373,53 +376,69 @@ const CalendarCurrentDate = () => {
         }
     }, [isYearOpen, currentYear]);
 
+    const renderMonthText = () => {
+        if (view === 'day') {
+            return format(date, 'MMMM d');
+        } else if (view === 'week') {
+            const start = startOfWeek(date);
+            const end = endOfWeek(date);
+            if (start.getMonth() !== end.getMonth()) {
+                return `${format(start, 'MMM d')} - ${format(end, 'MMM d')}`;
+            }
+            return `${format(start, 'MMM d')} - ${format(end, 'd')}`;
+        }
+        return months[currentMonth];
+    };
+
     return (
         <div className="flex items-center gap-2 md:gap-4">
-            <div className="relative" ref={monthRef}>
-                <button
-                    onClick={() => setIsMonthOpen(!isMonthOpen)}
-                    className={cn(
-                        "group flex items-center gap-2 px-4 py-2 rounded-2xl transition-all duration-300",
-                        "hover:bg-gray-100 dark:hover:bg-gray-800/50",
-                        isMonthOpen && "bg-gray-100 dark:bg-gray-800/50"
-                    )}
-                >
-                    <span className="text-xl md:text-2xl font-black text-emerald-500 dark:text-emerald-500 tracking-tight">
-                        {months[currentMonth]}
-                    </span>
-                    <ChevronsUpDown className={cn(
-                        "w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors",
-                        isMonthOpen && "text-gray-500"
-                    )} />
-                </button>
+            {view !== 'year' && (
+                <div className="relative" ref={monthRef}>
+                    <button
+                        onClick={() => setIsMonthOpen(!isMonthOpen)}
+                        className={cn(
+                            "group flex items-center gap-2 px-4 py-2 rounded-2xl transition-all duration-300",
+                            "hover:bg-gray-100 dark:hover:bg-gray-800/50",
+                            isMonthOpen && "bg-gray-100 dark:bg-gray-800/50"
+                        )}
+                    >
+                        <span className="text-xl md:text-2xl font-black text-emerald-500 dark:text-emerald-500 tracking-tight">
+                            {renderMonthText()}
+                        </span>
+                        <ChevronsUpDown className={cn(
+                            "w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors",
+                            isMonthOpen && "text-gray-500"
+                        )} />
+                    </button>
 
-                {isMonthOpen && (
-                    <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-[2rem] shadow-2xl z-[110] animate-in fade-in zoom-in-95 duration-200 overflow-hidden p-1.5 scrollbar-hide">
-                        <div className="grid grid-cols-1 gap-1 max-h-80 overflow-y-auto">
-                            {months.map((m, idx) => (
-                                <button
-                                    key={m}
-                                    onClick={() => {
-                                        const newDate = new Date(date);
-                                        newDate.setMonth(idx);
-                                        setDate(newDate);
-                                        setIsMonthOpen(false);
-                                    }}
-                                    className={cn(
-                                        "w-full px-4 py-2.5 rounded-2xl text-sm font-bold transition-all text-left flex items-center justify-between",
-                                        idx === currentMonth
-                                            ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900"
-                                            : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white"
-                                    )}
-                                >
-                                    {m}
-                                    {idx === currentMonth && <div className="size-1.5 rounded-full bg-current" />}
-                                </button>
-                            ))}
+                    {isMonthOpen && (
+                        <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-[2rem] shadow-2xl z-[110] animate-in fade-in zoom-in-95 duration-200 overflow-hidden p-1.5 scrollbar-hide">
+                            <div className="grid grid-cols-1 gap-1 max-h-80 overflow-y-auto">
+                                {months.map((m, idx) => (
+                                    <button
+                                        key={m}
+                                        onClick={() => {
+                                            const newDate = new Date(date);
+                                            newDate.setMonth(idx);
+                                            setDate(newDate);
+                                            setIsMonthOpen(false);
+                                        }}
+                                        className={cn(
+                                            "w-full px-4 py-2.5 rounded-2xl text-sm font-bold transition-all text-left flex items-center justify-between",
+                                            idx === currentMonth
+                                                ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900"
+                                                : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white"
+                                        )}
+                                    >
+                                        {m}
+                                        {idx === currentMonth && <div className="size-1.5 rounded-full bg-current" />}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                )}
-            </div>
+                    )}
+                </div>
+            )}
 
             <div className="relative" ref={yearRef}>
                 <button
