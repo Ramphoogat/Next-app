@@ -17,6 +17,7 @@ import { useDashboardSlug } from "@/components/url_slug";
 import FormSection from "@/components/FormSection";
 import { useToast } from "@/components/ToastProvider";
 import UsersSettings from "@/components/UsersSettings";
+import Templates from "@/components/workflow/templates";
 
 const UserDashboard = () => {
     const router = useRouter();
@@ -33,6 +34,7 @@ const UserDashboard = () => {
         RoleChange: "role-change",
         Calendar: "calendar",
         Kanban: "kanban",
+        Templates: "templates",
         Settings: "settings",
     } as const;
     const { activeTab, activeSubSlug, handleTabChange, setSubSlug, clearSubSlug } = useDashboardSlug(idToSlug, "Overview");
@@ -214,6 +216,10 @@ const UserDashboard = () => {
                 ) : activeTab === "RoleChange" ? (
                     <div className="flex-1 overflow-y-auto no-scrollbar">
                         <FormSection />
+                    </div>
+                ) : activeTab === "Templates" ? (
+                    <div className="flex-1 overflow-y-auto no-scrollbar space-y-8">
+                        <Templates />
                     </div>
                 ) : activeTab === "Calendar" ? (
                     <div className="flex-1 overflow-y-auto no-scrollbar space-y-8">

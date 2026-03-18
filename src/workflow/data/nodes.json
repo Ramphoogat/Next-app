@@ -1,0 +1,687 @@
+[
+  {
+    "id": "http_request",
+    "name": "HTTP Request",
+    "categoryId": "core",
+    "triggers": [],
+    "actions": ["make_request"],
+    "icon": "Globe",
+    "parameters": [
+      { "id": "url", "label": "URL", "type": "string", "required": true, "group": "Basic", "description": "The URL to send the request to.", "default": "" },
+      { "id": "method", "label": "Method", "type": "select", "required": true, "group": "Basic", "description": "The HTTP method to use.", "default": "GET", "options": [ { "value": "GET", "label": "GET" }, { "value": "POST", "label": "POST" }, { "value": "PUT", "label": "PUT" }, { "value": "PATCH", "label": "PATCH" }, { "value": "DELETE", "label": "DELETE" } ] },
+      { "id": "authType", "label": "Authentication", "type": "select", "required": false, "group": "Authentication", "description": "Type of authentication to use.", "default": "none", "options": [ { "value": "none", "label": "None" }, { "value": "bearer", "label": "Bearer Token" }, { "value": "basic", "label": "Basic Auth" }, { "value": "header", "label": "Header Key" } ] },
+      { "id": "token", "label": "Credentials", "type": "credentials", "required": false, "group": "Authentication", "description": "Select or create credentials for this request.", "dependsOn": { "field": "authType", "valueIn": ["bearer", "basic", "header"] } },
+      { "id": "bodyType", "label": "Body Type", "type": "select", "required": false, "group": "Payload", "description": "The format of the request body.", "default": "json", "options": [ { "value": "json", "label": "JSON" }, { "value": "form", "label": "Form Data" }, { "value": "raw", "label": "Raw Text" } ], "dependsOn": { "field": "method", "valueIn": ["POST", "PUT", "PATCH"] } },
+      { "id": "body", "label": "Body Content", "type": "json", "required": false, "group": "Payload", "description": "The content to send in the request body.", "default": "{}", "dependsOn": { "field": "method", "valueIn": ["POST", "PUT", "PATCH"] } }
+    ]
+  },
+  {
+    "id": "webhook",
+    "name": "Webhook",
+    "categoryId": "core",
+    "triggers": ["receive_webhook"],
+    "actions": [],
+    "icon": "Webhook",
+    "parameters": [
+      { "id": "path", "label": "Webhook Path", "type": "string", "required": true, "group": "Trigger", "description": "The unique path segment for this webhook.", "default": "default-webhook" },
+      { "id": "httpMethod", "label": "HTTP Method", "type": "select", "required": true, "group": "Trigger", "description": "Which HTTP method should trigger this node.", "default": "POST", "options": [ { "value": "GET", "label": "GET" }, { "value": "POST", "label": "POST" } ] },
+      { "id": "responseMode", "label": "Response Mode", "type": "select", "required": true, "group": "Output", "description": "When to respond to the HTTP request.", "default": "onReceived", "options": [ { "value": "onReceived", "label": "When Received" }, { "value": "onFinished", "label": "When Workflow Finishes" } ] }
+    ]
+  },
+  {
+    "id": "set",
+    "name": "Set",
+    "categoryId": "core",
+    "triggers": [],
+    "actions": ["set_variables"],
+    "icon": "Database",
+    "parameters": [
+      { "id": "values", "label": "Fields to Set", "type": "array", "required": true, "group": "Basic", "description": "Add fields and their new values.", "default": [] },
+      { "id": "keepOnlySet", "label": "Keep Only Set Fields", "type": "boolean", "required": false, "group": "Advanced", "description": "If enabled, all other fields from the input will be removed.", "default": false }
+    ]
+  },
+  {
+    "id": "function",
+    "name": "Function",
+    "categoryId": "core",
+    "triggers": [],
+    "actions": ["run_code"],
+    "icon": "Code",
+    "parameters": [
+      { "id": "code", "label": "JavaScript Code", "type": "json", "required": true, "group": "Basic", "description": "The JavaScript code to execute for each incoming item.", "default": "item.json.myField = 'value';\nreturn item;" }
+    ]
+  },
+  {
+    "id": "if",
+    "name": "IF",
+    "categoryId": "core",
+    "triggers": [],
+    "actions": ["evaluate_condition"],
+    "icon": "GitBranch",
+    "parameters": [
+      { "id": "conditions", "label": "Conditions", "type": "object", "required": true, "group": "Filtering", "description": "Define logic to route data to the true or false branch.", "default": {} },
+      { "id": "combine", "label": "Combine Operator", "type": "select", "required": true, "group": "Filtering", "description": "How to combine multiple conditions.", "default": "AND", "options": [ { "value": "AND", "label": "ALL must be true" }, { "value": "OR", "label": "ANY must be true" } ] }
+    ]
+  },
+  {
+    "id": "switch",
+    "name": "Switch",
+    "categoryId": "core",
+    "triggers": [],
+    "actions": ["evaluate_multiple"],
+    "icon": "GitMerge",
+    "parameters": [
+      { "id": "field", "label": "Reference Field", "type": "string", "required": true, "group": "Filtering", "description": "The field to check the value of.", "default": "" },
+      { "id": "cases", "label": "Routing Cases", "type": "array", "required": true, "group": "Filtering", "description": "Define value matches and their output ports.", "default": [] }
+    ]
+  },
+  {
+    "id": "merge",
+    "name": "Merge",
+    "categoryId": "core",
+    "triggers": [],
+    "actions": ["merge_data"],
+    "icon": "GitCommit",
+    "parameters": [
+      { "id": "mode", "label": "Merge Mode", "type": "select", "required": true, "group": "Basic", "description": "How to combine the incoming data streams.", "default": "append", "options": [ { "value": "append", "label": "Append (Combine lists)" }, { "value": "merge", "label": "Merge (Join by index)" }, { "value": "wait", "label": "Wait (Pass through last)" } ] }
+    ]
+  },
+  {
+    "id": "wait",
+    "name": "Wait",
+    "categoryId": "core",
+    "triggers": [],
+    "actions": ["delay_execution"],
+    "icon": "Clock",
+    "parameters": [
+      { "id": "amount", "label": "Wait Amount", "type": "number", "required": true, "group": "Basic", "description": "The number of units to wait.", "default": 1 },
+      { "id": "unit", "label": "Unit", "type": "select", "required": true, "group": "Basic", "description": "The unit of time.", "default": "seconds", "options": [ { "value": "seconds", "label": "Seconds" }, { "value": "minutes", "label": "Minutes" }, { "value": "hours", "label": "Hours" } ] }
+    ]
+  },
+  {
+    "id": "cron",
+    "name": "Cron",
+    "categoryId": "core",
+    "triggers": ["schedule_event"],
+    "actions": [],
+    "icon": "Calendar",
+    "parameters": [
+      { "id": "mode", "label": "Mode", "type": "select", "required": true, "group": "Trigger", "description": "Schedule type.", "default": "interval", "options": [ { "value": "interval", "label": "Every X Minutes" }, { "value": "daily", "label": "Daily" }, { "value": "custom", "label": "Custom Cron Expression" } ] },
+      { "id": "cronExpression", "label": "Expression", "type": "string", "required": true, "group": "Trigger", "description": "Standard cron string (e.g. * * * * *)", "default": "* * * * *", "dependsOn": { "field": "mode", "valueIn": ["custom"] } }
+    ]
+  },
+  {
+    "id": "slack",
+    "name": "Slack",
+    "categoryId": "core",
+    "triggers": ["new_message"],
+    "actions": ["send_message", "create_channel"],
+    "icon": "MessageSquare",
+    "parameters": [
+      { "id": "credentials", "label": "Slack API Credentials", "type": "credentials", "required": true, "group": "Authentication", "description": "OAuth2 or Bot Token.", "default": null },
+      { "id": "action", "label": "Operation", "type": "select", "required": true, "group": "Basic", "description": "What to do in Slack.", "default": "send_message", "options": [ { "value": "send_message", "label": "Send Message" }, { "value": "create_channel", "label": "Create Channel" } ] },
+      { "id": "channel", "label": "Channel ID / Name", "type": "string", "required": true, "group": "Basic", "description": "The Slack channel to target.", "default": "" },
+      { "id": "text", "label": "Message Text", "type": "string", "required": true, "group": "Payload", "description": "The content of the message.", "default": "", "dependsOn": { "field": "action", "valueIn": ["send_message"] } }
+    ]
+  },
+  {
+    "id": "gmail",
+    "name": "Gmail",
+    "categoryId": "core",
+    "triggers": ["new_email"],
+    "actions": ["send_email", "read_email"],
+    "icon": "Mail",
+    "parameters": [
+      { "id": "credentials", "label": "Gmail OAuth", "type": "credentials", "required": true, "group": "Authentication", "description": "Google OAuth2 Credentials.", "default": null },
+      { "id": "action", "label": "Operation", "type": "select", "required": true, "group": "Basic", "description": "What to do in Gmail.", "default": "send_email", "options": [ { "value": "send_email", "label": "Send Email" }, { "value": "read_email", "label": "Read Latest" } ] },
+      { "id": "to", "label": "Recipient Email", "type": "string", "required": true, "group": "Payload", "description": "Email address of the recipient.", "default": "", "dependsOn": { "field": "action", "valueIn": ["send_email"] } },
+      { "id": "subject", "label": "Subject", "type": "string", "required": false, "group": "Payload", "description": "The email subject line.", "default": "Notification from Flow", "dependsOn": { "field": "action", "valueIn": ["send_email"] } }
+    ]
+  },
+  {
+    "id": "outlook",
+    "name": "Outlook",
+    "categoryId": "core",
+    "triggers": ["new_email", "new_event"],
+    "actions": ["send_email"],
+    "icon": "Mail",
+    "parameters": [
+      { "id": "credentials", "label": "Outlook Login", "type": "credentials", "required": true, "group": "Authentication", "description": "Microsoft OAuth2 Credentials.", "default": null },
+      { "id": "to", "label": "Recipient", "type": "string", "required": true, "group": "Basic", "description": "Recipient email address.", "default": "" },
+      { "id": "body", "label": "Email Body", "type": "string", "required": true, "group": "Payload", "description": "The HTML or text content of the email.", "default": "" }
+    ]
+  },
+  {
+    "id": "telegram",
+    "name": "Telegram",
+    "categoryId": "core",
+    "triggers": ["new_message"],
+    "actions": ["send_message"],
+    "icon": "Send",
+    "parameters": [
+      { "id": "credentials", "label": "Bot Token", "type": "credentials", "required": true, "group": "Authentication", "description": "Telegram Bot API Token.", "default": null },
+      { "id": "chatId", "label": "Chat ID", "type": "string", "required": true, "group": "Basic", "description": "The numeric ID of the chat or group.", "default": "" },
+      { "id": "text", "label": "Message text", "type": "string", "required": true, "group": "Payload", "description": "Content of the telegram message.", "default": "" }
+    ]
+  },
+  {
+    "id": "discord",
+    "name": "Discord",
+    "categoryId": "core",
+    "triggers": ["new_message"],
+    "actions": ["send_message"],
+    "icon": "MessageCircle",
+    "parameters": [
+      { "id": "webhookUrl", "label": "Webhook URL", "type": "credentials", "required": true, "group": "Authentication", "description": "Discord channel webhook URL.", "default": null },
+      { "id": "content", "label": "Content", "type": "string", "required": true, "group": "Payload", "description": "The message to post.", "default": "" }
+    ]
+  },
+  {
+    "id": "whatsapp",
+    "name": "WhatsApp",
+    "categoryId": "core",
+    "triggers": ["new_message"],
+    "actions": ["send_message"],
+    "icon": "Phone",
+    "parameters": [
+      { "id": "credentials", "label": "Meta API Token", "type": "credentials", "required": true, "group": "Authentication", "description": "WhatsApp Business API Access Token.", "default": null },
+      { "id": "phoneNumberId", "label": "Phone Number ID", "type": "string", "required": true, "group": "Basic", "description": "ID of the sending phone number.", "default": "" },
+      { "id": "to", "label": "Recipient", "type": "string", "required": true, "group": "Payload", "description": "Phone number including country code.", "default": "" }
+    ]
+  },
+  {
+    "id": "openai",
+    "name": "OpenAI",
+    "categoryId": "core",
+    "triggers": [],
+    "actions": ["generate_text", "generate_image"],
+    "icon": "Cpu",
+    "parameters": [
+      { "id": "credentials", "label": "OpenAI API Key", "type": "credentials", "required": true, "group": "Authentication", "description": "API Key from OpenAI Dashboard.", "default": null },
+      { "id": "model", "label": "Model", "type": "select", "required": true, "group": "Basic", "description": "The AI model to use.", "default": "gpt-4", "options": [ { "value": "gpt-4", "label": "GPT-4" }, { "value": "gpt-3.5-turbo", "label": "GPT-3.5" }, { "value": "dall-e-3", "label": "DALL-E 3" } ] },
+      { "id": "prompt", "label": "Prompt", "type": "string", "required": true, "group": "Payload", "description": "Instruction for the AI.", "default": "Translate the following to French: {{ $json.text }}" }
+    ]
+  },
+  {
+    "id": "anthropic",
+    "name": "Anthropic",
+    "categoryId": "core",
+    "triggers": [],
+    "actions": ["generate_text"],
+    "icon": "Cpu",
+    "parameters": [
+      { "id": "apiKey", "label": "Anthropic API Key", "type": "credentials", "required": true, "group": "Authentication", "description": "Claude API key.", "default": null },
+      { "id": "model", "label": "Model", "type": "select", "required": true, "group": "Basic", "description": "Claude version.", "default": "claude-3-opus", "options": [ { "value": "claude-3-opus", "label": "Claude 3 Opus" }, { "value": "claude-3-sonnet", "label": "Claude 3 Sonnet" } ] },
+      { "id": "prompt", "label": "Prompt", "type": "string", "required": true, "group": "Payload", "description": "The user message.", "default": "" }
+    ]
+  },
+  {
+    "id": "huggingface",
+    "name": "HuggingFace",
+    "categoryId": "core",
+    "triggers": [],
+    "actions": ["run_model"],
+    "icon": "Cpu",
+    "parameters": [
+      { "id": "apiKey", "label": "Inference API Token", "type": "credentials", "required": true, "group": "Authentication", "description": "HuggingFace Read Token.", "default": null },
+      { "id": "modelId", "label": "Model Hub ID", "type": "string", "required": true, "group": "Basic", "description": "Full ID (e.g. meta-llama/Llama-2).", "default": "" }
+    ]
+  },
+  {
+    "id": "ai_agents",
+    "name": "AI Agents",
+    "categoryId": "core",
+    "triggers": [],
+    "actions": ["run_agent"],
+    "icon": "Users",
+    "parameters": [
+      { "id": "agentId", "label": "Agent Blueprint ID", "type": "string", "required": true, "group": "Basic", "description": "Unique ID of the agent to trigger.", "default": "" },
+      { "id": "input", "label": "Agent Task", "type": "string", "required": true, "group": "Payload", "description": "Initial task description for the agent.", "default": "" }
+    ]
+  },
+  {
+    "id": "embeddings",
+    "name": "Embeddings",
+    "categoryId": "core",
+    "triggers": [],
+    "actions": ["generate_embedding"],
+    "icon": "Database",
+    "parameters": [
+      { "id": "provider", "label": "Vector Provider", "type": "select", "required": true, "group": "Basic", "description": "AI provider for embeddings.", "default": "openai", "options": [ { "value": "openai", "label": "OpenAI" }, { "value": "cohere", "label": "Cohere" } ] },
+      { "id": "text", "label": "Input Text", "type": "string", "required": true, "group": "Payload", "description": "Text to convert into a vector.", "default": "" }
+    ]
+  },
+  {
+    "id": "vectordbs",
+    "name": "Vector DBs",
+    "categoryId": "core",
+    "triggers": [],
+    "actions": ["upsert", "search"],
+    "icon": "Database",
+    "parameters": [
+      { "id": "credentials", "label": "Database Secret", "type": "credentials", "required": true, "group": "Authentication", "description": "API key or URL.", "default": null },
+      { "id": "index", "label": "Index Name", "type": "string", "required": true, "group": "Basic", "description": "Vector index/collection name.", "default": "" },
+      { "id": "operation", "label": "Operation", "type": "select", "required": true, "group": "Basic", "description": "Database action.", "default": "search", "options": [ { "value": "upsert", "label": "Upsert Vectors" }, { "value": "search", "label": "Similarity Search" } ] }
+    ]
+  },
+  {
+    "id": "mysql",
+    "name": "MySQL",
+    "categoryId": "database",
+    "triggers": ["row_inserted"],
+    "actions": ["execute_query"],
+    "icon": "Database",
+    "parameters": [
+      { "id": "credentials", "label": "DB Connection", "type": "credentials", "required": true, "group": "Authentication", "description": "Host, Port, User, Password.", "default": null },
+      { "id": "operation", "label": "Operation", "type": "select", "required": true, "group": "Basic", "description": "The type of SQL action.", "default": "select", "options": [ { "value": "select", "label": "Select Rows" }, { "value": "insert", "label": "Insert Row" }, { "value": "update", "label": "Update Row" }, { "value": "query", "label": "Execute Custom SQL" } ] },
+      { "id": "table", "label": "Table Name", "type": "string", "required": true, "group": "Basic", "description": "The table to operate on.", "default": "" },
+      { "id": "sql", "label": "SQL Query", "type": "string", "required": true, "group": "Payload", "description": "The SQL text to run.", "default": "SELECT * FROM users LIMIT 10;", "dependsOn": { "field": "operation", "valueIn": ["query"] } }
+    ]
+  },
+  {
+    "id": "postgresql",
+    "name": "PostgreSQL",
+    "categoryId": "database",
+    "triggers": ["row_inserted"],
+    "actions": ["execute_query"],
+    "icon": "Database",
+    "parameters": [
+      { "id": "credentials", "label": "Posgres Login", "type": "credentials", "required": true, "group": "Authentication", "description": "Database user credentials.", "default": null },
+      { "id": "schema", "label": "Schema", "type": "string", "required": false, "group": "Basic", "description": "The postgres schema.", "default": "public" },
+      { "id": "query", "label": "Raw Query", "type": "string", "required": true, "group": "Payload", "description": "SQL command.", "default": "" }
+    ]
+  },
+  {
+    "id": "mongodb",
+    "name": "MongoDB",
+    "categoryId": "database",
+    "triggers": ["document_inserted"],
+    "actions": ["execute_query"],
+    "icon": "Database",
+    "parameters": [
+      { "id": "credentials", "label": "Connection String", "type": "credentials", "required": true, "group": "Authentication", "description": "Standard mongodb+srv URL.", "default": null },
+      { "id": "collection", "label": "Collection", "type": "string", "required": true, "group": "Basic", "description": "The database collection name.", "default": "" },
+      { "id": "filter", "label": "JSON Filter", "type": "json", "required": true, "group": "Filtering", "description": "MongoDB query object.", "default": "{}" }
+    ]
+  },
+  {
+    "id": "redis",
+    "name": "Redis",
+    "categoryId": "database",
+    "triggers": [],
+    "actions": ["get", "set", "delete"],
+    "icon": "Database",
+    "parameters": [
+      { "id": "credentials", "label": "Redis URI", "type": "credentials", "required": true, "group": "Authentication", "description": "Redis connection URL with password.", "default": null },
+      { "id": "key", "label": "Key", "type": "string", "required": true, "group": "Basic", "description": "The cache key.", "default": "" },
+      { "id": "value", "label": "Value", "type": "string", "required": true, "group": "Payload", "description": "The data to store.", "default": "", "dependsOn": { "field": "action", "valueIn": ["set"] } }
+    ]
+  },
+  {
+    "id": "supabase",
+    "name": "Supabase",
+    "categoryId": "database",
+    "triggers": ["row_inserted", "row_updated"],
+    "actions": ["insert", "update", "delete", "select"],
+    "icon": "Database",
+    "parameters": [
+      { "id": "credentials", "label": "Project Keys", "type": "credentials", "required": true, "group": "Authentication", "description": "Supabase URL and Service Role Key.", "default": null },
+      { "id": "table", "label": "Table Name", "type": "string", "required": true, "group": "Basic", "description": "Target table.", "default": "" },
+      { "id": "match", "label": "Filter (JSON)", "type": "json", "required": false, "group": "Filtering", "description": "Example: { \"id\": 1 }", "default": "{}" }
+    ]
+  },
+  {
+    "id": "airtable",
+    "name": "Airtable",
+    "categoryId": "database",
+    "triggers": ["new_record"],
+    "actions": ["create_record", "update_record"],
+    "icon": "Table",
+    "parameters": [
+      { "id": "apiKey", "label": "Personal Access Token", "type": "credentials", "required": true, "group": "Authentication", "description": "Airtable API PAT.", "default": null },
+      { "id": "baseId", "label": "Base ID", "type": "string", "required": true, "group": "Basic", "description": "The ID of the Airtable base.", "default": "" },
+      { "id": "tableId", "label": "Table ID / Name", "type": "string", "required": true, "group": "Basic", "description": "The name or ID of the table.", "default": "" }
+    ]
+  },
+  {
+    "id": "github",
+    "name": "GitHub",
+    "categoryId": "devops",
+    "triggers": ["push", "pull_request", "issue"],
+    "actions": ["create_issue", "create_pull_request"],
+    "icon": "Github",
+    "parameters": [
+      { "id": "credentials", "label": "OAuth / PAT", "type": "credentials", "required": true, "group": "Authentication", "description": "GitHub personal access token.", "default": null },
+      { "id": "owner", "label": "Repository Owner", "type": "string", "required": true, "group": "Basic", "description": "User or organization name.", "default": "" },
+      { "id": "repo", "label": "Repository Name", "type": "string", "required": true, "group": "Basic", "description": "The name of the repo.", "default": "" },
+      { "id": "title", "label": "Issue Title", "type": "string", "required": true, "group": "Payload", "description": "The title for the new issue.", "default": "", "dependsOn": { "field": "action", "valueIn": ["create_issue"] } }
+    ]
+  },
+  {
+    "id": "gitlab",
+    "name": "GitLab",
+    "categoryId": "devops",
+    "triggers": ["push", "merge_request"],
+    "actions": ["create_issue"],
+    "icon": "Gitlab",
+    "parameters": [
+      { "id": "accessToken", "label": "Private Token", "type": "credentials", "required": true, "group": "Authentication", "description": "GitLab personal access token.", "default": null },
+      { "id": "projectId", "label": "Project ID", "type": "string", "required": true, "group": "Basic", "description": "Numeric ID of the project.", "default": "" }
+    ]
+  },
+  {
+    "id": "docker",
+    "name": "Docker",
+    "categoryId": "devops",
+    "triggers": [],
+    "actions": ["build_image", "run_container"],
+    "icon": "Box",
+    "parameters": [
+      { "id": "imageName", "label": "Image Name", "type": "string", "required": true, "group": "Basic", "description": "Full tag (e.g. my-app:latest).", "default": "" },
+      { "id": "command", "label": "Container Command", "type": "string", "required": false, "group": "Advanced", "description": "Override CMD or ENTRYPOINT.", "default": "" }
+    ]
+  },
+  {
+    "id": "jenkins",
+    "name": "Jenkins",
+    "categoryId": "devops",
+    "triggers": ["build_finished"],
+    "actions": ["trigger_build"],
+    "icon": "Settings",
+    "parameters": [
+      { "id": "url", "label": "Jenkins URL", "type": "string", "required": true, "group": "Basic", "description": "Base URL of server.", "default": "" },
+      { "id": "jobName", "label": "Job Name", "type": "string", "required": true, "group": "Basic", "description": "The specific build job.", "default": "" }
+    ]
+  },
+  {
+    "id": "aws",
+    "name": "AWS",
+    "categoryId": "devops",
+    "triggers": ["sns_message"],
+    "actions": ["s3_upload", "lambda_invoke"],
+    "icon": "Cloud",
+    "parameters": [
+      { "id": "credentials", "label": "AWS Keys", "type": "credentials", "required": true, "group": "Authentication", "description": "Access Key ID & Secret Access Key.", "default": null },
+      { "id": "region", "label": "Region", "type": "string", "required": true, "group": "Basic", "description": "AWS Region code (e.g. us-east-1).", "default": "us-east-1" },
+      { "id": "bucket", "label": "S3 Bucket", "type": "string", "required": true, "group": "Payload", "description": "Name of s3 bucket.", "default": "", "dependsOn": { "field": "action", "valueIn": ["s3_upload"] } }
+    ]
+  },
+  {
+    "id": "gcp",
+    "name": "Google Cloud",
+    "categoryId": "devops",
+    "triggers": ["pubsub_message"],
+    "actions": ["storage_upload", "functions_invoke"],
+    "icon": "Cloud",
+    "parameters": [
+      { "id": "credentials", "label": "Service Account", "type": "credentials", "required": true, "group": "Authentication", "description": "JSON key file content.", "default": null },
+      { "id": "projectId", "label": "Project ID", "type": "string", "required": true, "group": "Basic", "description": "GCP project identifier.", "default": "" }
+    ]
+  },
+  {
+    "id": "hubspot",
+    "name": "HubSpot",
+    "categoryId": "marketing",
+    "triggers": ["contact_created"],
+    "actions": ["create_contact", "update_contact"],
+    "icon": "Users",
+    "parameters": [
+      { "id": "accessToken", "label": "Private App Token", "type": "credentials", "required": true, "group": "Authentication", "description": "HubSpot Access Token.", "default": null },
+      { "id": "email", "label": "Contact Email", "type": "string", "required": true, "group": "Basic", "description": "Unique email for the contact.", "default": "" }
+    ]
+  },
+  {
+    "id": "salesforce",
+    "name": "Salesforce",
+    "categoryId": "marketing",
+    "triggers": ["lead_created"],
+    "actions": ["create_lead"],
+    "icon": "Users",
+    "parameters": [
+      { "id": "credentials", "label": "Salesforce OAuth", "type": "credentials", "required": true, "group": "Authentication", "description": "OAuth2 Consumer Key & Secret.", "default": null },
+      { "id": "lastName", "label": "Last Name", "type": "string", "required": true, "group": "Basic", "description": "Required field for new leads.", "default": "" }
+    ]
+  },
+  {
+    "id": "mailchimp",
+    "name": "Mailchimp",
+    "categoryId": "marketing",
+    "triggers": ["subscriber_added"],
+    "actions": ["add_subscriber", "send_campaign"],
+    "icon": "Mail",
+    "parameters": [
+      { "id": "apiKey", "label": "Mailchimp API Key", "type": "credentials", "required": true, "group": "Authentication", "description": "Key including datacenter prefix (e.g. key-us1).", "default": null },
+      { "id": "listId", "label": "Audience ID", "type": "string", "required": true, "group": "Basic", "description": "The audience to manage.", "default": "" }
+    ]
+  },
+  {
+    "id": "google_ads",
+    "name": "Google Ads",
+    "categoryId": "marketing",
+    "triggers": [],
+    "actions": ["create_campaign"],
+    "icon": "BarChart",
+    "parameters": [
+      { "id": "developerToken", "label": "Developer Token", "type": "credentials", "required": true, "group": "Authentication", "description": "Google Ads developer token.", "default": null },
+      { "id": "customerId", "label": "Customer ID", "type": "string", "required": true, "group": "Basic", "description": "Marketing account ID.", "default": "" }
+    ]
+  },
+  {
+    "id": "facebook_ads",
+    "name": "Facebook Ads",
+    "categoryId": "marketing",
+    "triggers": ["lead_gen"],
+    "actions": ["create_campaign"],
+    "icon": "BarChart",
+    "parameters": [
+      { "id": "accessToken", "label": "Page Access Token", "type": "credentials", "required": true, "group": "Authentication", "description": "Long-lived marketing token.", "default": null },
+      { "id": "adAccountId", "label": "Ad Account ID", "type": "string", "required": true, "group": "Basic", "description": "Format: act_xxxxxxxx.", "default": "" }
+    ]
+  },
+  {
+    "id": "shopify",
+    "name": "Shopify",
+    "categoryId": "ecommerce",
+    "triggers": ["new_order", "cart_abandoned"],
+    "actions": ["create_product", "update_inventory"],
+    "icon": "ShoppingCart",
+    "parameters": [
+      { "id": "credentials", "label": "Admin Access Token", "type": "credentials", "required": true, "group": "Authentication", "description": "Shopify app access token.", "default": null },
+      { "id": "shopName", "label": "Shop Name", "type": "string", "required": true, "group": "Basic", "description": "Subdomain of .myshopify.com.", "default": "" }
+    ]
+  },
+  {
+    "id": "woocommerce",
+    "name": "WooCommerce",
+    "categoryId": "ecommerce",
+    "triggers": ["new_order"],
+    "actions": ["update_order"],
+    "icon": "ShoppingCart",
+    "parameters": [
+      { "id": "url", "label": "Store URL", "type": "string", "required": true, "group": "Basic", "description": "Protocol and domain of store.", "default": "" },
+      { "id": "consumerKey", "label": "Consumer Key", "type": "credentials", "required": true, "group": "Authentication", "description": "API consumer key.", "default": null }
+    ]
+  },
+  {
+    "id": "stripe",
+    "name": "Stripe",
+    "categoryId": "ecommerce",
+    "triggers": ["payment_succeeded", "payment_failed"],
+    "actions": ["create_customer", "create_charge"],
+    "icon": "CreditCard",
+    "parameters": [
+      { "id": "secretKey", "label": "Secret Key", "type": "credentials", "required": true, "group": "Authentication", "description": "sk_test or sk_live key.", "default": null },
+      { "id": "amount", "label": "Amount", "type": "number", "required": true, "group": "Payload", "description": "Value in cents (e.g. 1000 for $10.00).", "default": 0, "dependsOn": { "field": "action", "valueIn": ["create_charge"] } }
+    ]
+  },
+  {
+    "id": "razorpay",
+    "name": "Razorpay",
+    "categoryId": "ecommerce",
+    "triggers": ["payment_captured", "invoice_paid"],
+    "actions": ["create_order", "fetch_payment"],
+    "icon": "CreditCard",
+    "parameters": [
+      { "id": "keyId", "label": "Key ID", "type": "credentials", "required": true, "group": "Authentication", "description": "Razorpay public key ID.", "default": null },
+      { "id": "amount", "label": "Amount (INR)", "type": "number", "required": true, "group": "Payload", "description": "Amount in paisa.", "default": 0 }
+    ]
+  },
+  {
+    "id": "notion",
+    "name": "Notion",
+    "categoryId": "productivity",
+    "triggers": ["page_added"],
+    "actions": ["create_page", "append_block"],
+    "icon": "FileText",
+    "parameters": [
+      { "id": "integrationToken", "label": "Internal Integration Token", "type": "credentials", "required": true, "group": "Authentication", "description": "Secret token from Notion Integrations.", "default": null },
+      { "id": "databaseId", "label": "Parent Database ID", "type": "string", "required": true, "group": "Basic", "description": "UUID of the target database.", "default": "" }
+    ]
+  },
+  {
+    "id": "google_sheets",
+    "name": "Google Sheets",
+    "categoryId": "productivity",
+    "triggers": ["row_added"],
+    "actions": ["append_row", "update_row"],
+    "icon": "Grid",
+    "parameters": [
+      { "id": "credentials", "label": "Google Auth", "type": "credentials", "required": true, "group": "Authentication", "description": "OAuth2 or Service Account.", "default": null },
+      { "id": "spreadsheetId", "label": "Spreadsheet ID", "type": "string", "required": true, "group": "Basic", "description": "The ID of the sheet (from URL).", "default": "" },
+      { "id": "range", "label": "Sheet Name / Range", "type": "string", "required": true, "group": "Basic", "description": "Example: Sheet1!A1", "default": "Sheet1" }
+    ]
+  },
+  {
+    "id": "trello",
+    "name": "Trello",
+    "categoryId": "productivity",
+    "triggers": ["card_created"],
+    "actions": ["create_card", "move_card"],
+    "icon": "Layout",
+    "parameters": [
+      { "id": "apiKey", "label": "API Key", "type": "credentials", "required": true, "group": "Authentication", "description": "Trello dev key.", "default": null },
+      { "id": "listId", "label": "List ID", "type": "string", "required": true, "group": "Basic", "description": "The destination list.", "default": "" }
+    ]
+  },
+  {
+    "id": "asana",
+    "name": "Asana",
+    "categoryId": "productivity",
+    "triggers": ["task_added"],
+    "actions": ["create_task"],
+    "icon": "CheckSquare",
+    "parameters": [
+      { "id": "pat", "label": "Personal Access Token", "type": "credentials", "required": true, "group": "Authentication", "description": "Asana dev token.", "default": null },
+      { "id": "workspaceId", "label": "Workspace ID", "type": "string", "required": true, "group": "Basic", "description": "Numeric workspace GID.", "default": "" }
+    ]
+  },
+  {
+    "id": "twitter",
+    "name": "Twitter (X)",
+    "categoryId": "social",
+    "triggers": ["mentioned"],
+    "actions": ["post_tweet"],
+    "icon": "Twitter",
+    "parameters": [
+      { "id": "credentials", "label": "Dev App Keys", "type": "credentials", "required": true, "group": "Authentication", "description": "API Key, Secret, Access Token and Secret.", "default": null },
+      { "id": "text", "label": "Tweet Text", "type": "string", "required": true, "group": "Payload", "description": "The content to publish.", "default": "" }
+    ]
+  },
+  {
+    "id": "linkedin",
+    "name": "LinkedIn",
+    "categoryId": "social",
+    "triggers": ["new_post"],
+    "actions": ["create_post"],
+    "icon": "Linkedin",
+    "parameters": [
+      { "id": "accessToken", "label": "OAuth Access Token", "type": "credentials", "required": true, "group": "Authentication", "description": "LinkedIn OAuth2 token.", "default": null },
+      { "id": "comment", "label": "Post Content", "type": "string", "required": true, "group": "Payload", "description": "The text for the post.", "default": "" }
+    ]
+  },
+  {
+    "id": "instagram",
+    "name": "Instagram",
+    "categoryId": "social",
+    "triggers": ["new_media"],
+    "actions": ["publish_media"],
+    "icon": "Instagram",
+    "parameters": [
+      { "id": "accessToken", "label": "Page Access Token", "type": "credentials", "required": true, "group": "Authentication", "description": "Facebook/Instagram Graph token.", "default": null },
+      { "id": "imageUrl", "label": "Image URL", "type": "string", "required": true, "group": "Payload", "description": "Direct link to the image to post.", "default": "" }
+    ]
+  },
+  {
+    "id": "youtube",
+    "name": "YouTube",
+    "categoryId": "social",
+    "triggers": ["new_video"],
+    "actions": ["upload_video"],
+    "icon": "Youtube",
+    "parameters": [
+      { "id": "credentials", "label": "Google OAuth", "type": "credentials", "required": true, "group": "Authentication", "description": "OAuth Client ID with YouTube scopes.", "default": null },
+      { "id": "title", "label": "Video Title", "type": "string", "required": true, "group": "Payload", "description": "The title for the uploaded video.", "default": "" }
+    ]
+  },
+  {
+    "id": "google_drive",
+    "name": "Google Drive",
+    "categoryId": "storage",
+    "triggers": ["file_added"],
+    "actions": ["upload_file", "search_file"],
+    "icon": "HardDrive",
+    "parameters": [
+      { "id": "credentials", "label": "Google Auth", "type": "credentials", "required": true, "group": "Authentication", "description": "OAuth2 credentials.", "default": null },
+      { "id": "folderId", "label": "Parent Folder ID", "type": "string", "required": false, "group": "Basic", "description": "The folder where file will be uploaded.", "default": "root" }
+    ]
+  },
+  {
+    "id": "dropbox",
+    "name": "Dropbox",
+    "categoryId": "storage",
+    "triggers": ["file_added"],
+    "actions": ["upload_file"],
+    "icon": "HardDrive",
+    "parameters": [
+      { "id": "accessToken", "label": "App Access Token", "type": "credentials", "required": true, "group": "Authentication", "description": "Dropbox API token.", "default": null },
+      { "id": "destPath", "label": "Destination Path", "type": "string", "required": true, "group": "Basic", "description": "Example: /photos/my_file.jpg", "default": "" }
+    ]
+  },
+  {
+    "id": "s3",
+    "name": "S3",
+    "categoryId": "storage",
+    "triggers": ["object_created"],
+    "actions": ["upload_object"],
+    "icon": "HardDrive",
+    "parameters": [
+      { "id": "credentials", "label": "AWS Secret", "type": "credentials", "required": true, "group": "Authentication", "description": "Access Key and Secret.", "default": null },
+      { "id": "bucket", "label": "Bucket Name", "type": "string", "required": true, "group": "Basic", "description": "Target S3 bucket.", "default": "" },
+      { "id": "key", "label": "Object Key", "type": "string", "required": true, "group": "Payload", "description": "Filename or path in bucket.", "default": "data.json" }
+    ]
+  },
+  {
+    "id": "google_analytics",
+    "name": "Google Analytics",
+    "categoryId": "analytics",
+    "triggers": [],
+    "actions": ["track_event"],
+    "icon": "PieChart",
+    "parameters": [
+      { "id": "measurementId", "label": "Measurement ID", "type": "string", "required": true, "group": "Basic", "description": "Format: G-XXXXXXXXXX.", "default": "" },
+      { "id": "apiSecret", "label": "API Secret", "type": "credentials", "required": true, "group": "Authentication", "description": "GA4 Measurement Protocol Secret.", "default": null }
+    ]
+  },
+  {
+    "id": "mixpanel",
+    "name": "Mixpanel",
+    "categoryId": "analytics",
+    "triggers": [],
+    "actions": ["track_event"],
+    "icon": "PieChart",
+    "parameters": [
+      { "id": "projectToken", "label": "Project Token", "type": "credentials", "required": true, "group": "Authentication", "description": "Unique identifier for your project.", "default": null },
+      { "id": "eventName", "label": "Event Name", "type": "string", "required": true, "group": "Basic", "description": "Label for the event.", "default": "" }
+    ]
+  }
+]

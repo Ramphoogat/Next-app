@@ -1,0 +1,11 @@
+[
+  { "id": "core", "name": "Core Nodes", "description": "Essential logic, operations and common integrations" },
+  { "id": "database", "name": "Databases", "description": "Database connection and operation nodes" },
+  { "id": "devops", "name": "DevOps / Backend", "description": "Cloud, repository, and CI/CD tools" },
+  { "id": "marketing", "name": "Marketing / CRM", "description": "Customer relationship and marketing automation" },
+  { "id": "ecommerce", "name": "E-commerce", "description": "Payment gateways and stores" },
+  { "id": "productivity", "name": "Productivity", "description": "Work management and spreadsheets" },
+  { "id": "social", "name": "Social Media", "description": "Social networking and media platforms" },
+  { "id": "storage", "name": "File & Storage", "description": "Cloud storage and file management" },
+  { "id": "analytics", "name": "Analytics", "description": "Data analytics and tracking" }
+]

@@ -30,6 +30,7 @@ import { UserManagementRow } from "./AdminComponents";
 import { useToast } from "@/components/ToastProvider";
 import { useDashboardSlug } from "@/components/url_slug";
 import FormSection from "@/components/FormSection";
+import Templates from "@/components/workflow/templates";
 import Requests from "@/components/requests";
 import EditorSettings from "@/components/EditorSettings";
 
@@ -211,6 +212,10 @@ const EditorDashboard = () => {
                             <p className="text-xs md:text-sm text-gray-500">Review pending role change applications.</p>
                         </div>
                         <Requests />
+                    </div>
+                ) : activeTab === "Templates" ? (
+                    <div className="flex-1 overflow-y-auto no-scrollbar space-y-8">
+                        <Templates />
                     </div>
                 ) : activeTab === "Calendar" ? (
                     <div className="flex-1 overflow-y-auto no-scrollbar space-y-8">

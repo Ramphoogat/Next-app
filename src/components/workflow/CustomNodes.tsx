@@ -5,9 +5,10 @@ import { Handle, Position, NodeProps } from '@xyflow/react';
 import {
   Webhook, Clock, FileText, Zap, Mail, Globe, Database, Bell,
   GitBranch, Timer, Split, Repeat, CheckCircle2, AlertCircle,
-  Loader2, Link2, Plus
+  Loader2, Link2, Plus, Package
 } from 'lucide-react';
-import { WorkflowNodeData, NodeCategory } from '@/types/workflow';
+import { WorkflowNodeData } from '@/types/workflow';
+import { NodeRegistry } from '@/workflow/core/nodeRegistry';
 
 // ── Icon map ──────────────────────────────────────────────────────────────
 const IconMap: Record<string, React.ElementType> = {
@@ -16,22 +17,27 @@ const IconMap: Record<string, React.ElementType> = {
 };
 
 // ── Per-category colour tokens ────────────────────────────────────────────
-const CAT: Record<NodeCategory, { accent: string; bg: string; text: string; ring: string; handle: string }> = {
-  trigger: {
-    accent: '#10b981', bg: 'bg-emerald-50 dark:bg-emerald-950/40',
-    text: 'text-emerald-700 dark:text-emerald-300',
-    ring: 'ring-emerald-400', handle: '#10b981',
-  },
-  action: {
-    accent: '#3b82f6', bg: 'bg-blue-50 dark:bg-blue-950/40',
-    text: 'text-blue-700 dark:text-blue-300',
-    ring: 'ring-blue-400', handle: '#3b82f6',
-  },
-  logic: {
-    accent: '#8b5cf6', bg: 'bg-purple-50 dark:bg-purple-950/40',
-    text: 'text-purple-700 dark:text-purple-300',
-    ring: 'ring-purple-400', handle: '#8b5cf6',
-  },
+const fallbackCat = {
+  accent: '#6b7280', bg: 'bg-gray-50 dark:bg-gray-950/40',
+  text: 'text-gray-700 dark:text-gray-300',
+  ring: 'ring-gray-400', handle: '#6b7280',
+};
+
+const CAT: Record<string, { accent: string; bg: string; text: string; ring: string; handle: string }> = {
+  trigger: { accent: '#10b981', bg: 'bg-emerald-50 dark:bg-emerald-950/40', text: 'text-emerald-700 dark:text-emerald-300', ring: 'ring-emerald-400', handle: '#10b981' },
+  action: { accent: '#3b82f6', bg: 'bg-blue-50 dark:bg-blue-950/40', text: 'text-blue-700 dark:text-blue-300', ring: 'ring-blue-400', handle: '#3b82f6' },
+  logic: { accent: '#a855f7', bg: 'bg-purple-50 dark:bg-purple-950/40', text: 'text-purple-700 dark:text-purple-300', ring: 'ring-purple-400', handle: '#a855f7' },
+  communication: { accent: '#6366f1', bg: 'bg-indigo-50 dark:bg-indigo-950/40', text: 'text-indigo-700 dark:text-indigo-300', ring: 'ring-indigo-400', handle: '#6366f1' },
+  payments: { accent: '#f59e0b', bg: 'bg-amber-50 dark:bg-amber-950/40', text: 'text-amber-700 dark:text-amber-300', ring: 'ring-amber-400', handle: '#f59e0b' },
+  core: { accent: '#ec4899', bg: 'bg-pink-50 dark:bg-pink-950/40', text: 'text-pink-700 dark:text-pink-300', ring: 'ring-pink-400', handle: '#ec4899' },
+  database: { accent: '#06b6d4', bg: 'bg-cyan-50 dark:bg-cyan-950/40', text: 'text-cyan-700 dark:text-cyan-300', ring: 'ring-cyan-400', handle: '#06b6d4' },
+  devops: { accent: '#64748b', bg: 'bg-slate-50 dark:bg-slate-950/40', text: 'text-slate-700 dark:text-slate-300', ring: 'ring-slate-400', handle: '#64748b' },
+  marketing: { accent: '#f43f5e', bg: 'bg-rose-50 dark:bg-rose-950/40', text: 'text-rose-700 dark:text-rose-300', ring: 'ring-rose-400', handle: '#f43f5e' },
+  ecommerce: { accent: '#d946ef', bg: 'bg-fuchsia-50 dark:bg-fuchsia-950/40', text: 'text-fuchsia-700 dark:text-fuchsia-300', ring: 'ring-fuchsia-400', handle: '#d946ef' },
+  productivity: { accent: '#14b8a6', bg: 'bg-teal-50 dark:bg-teal-950/40', text: 'text-teal-700 dark:text-teal-300', ring: 'ring-teal-400', handle: '#14b8a6' },
+  social: { accent: '#0ea5e9', bg: 'bg-sky-50 dark:bg-sky-950/40', text: 'text-sky-700 dark:text-sky-300', ring: 'ring-sky-400', handle: '#0ea5e9' },
+  storage: { accent: '#8b5cf6', bg: 'bg-violet-50 dark:bg-violet-950/40', text: 'text-violet-700 dark:text-violet-300', ring: 'ring-violet-400', handle: '#8b5cf6' },
+  analytics: { accent: '#ef4444', bg: 'bg-red-50 dark:bg-red-950/40', text: 'text-red-700 dark:text-red-300', ring: 'ring-red-400', handle: '#ef4444' }
 };
 
 // ── Shared handle style ────────────────────────────────────────────────────
@@ -71,9 +77,9 @@ const BaseNode: React.FC<CustomNodeProps> = ({ data, selected }) => {
 
   const cat = isConnector
     ? { accent: '#6366f1', bg: 'bg-indigo-50 dark:bg-indigo-950/40', text: 'text-indigo-700 dark:text-indigo-300', ring: 'ring-indigo-400', handle: '#6366f1' }
-    : CAT[data.category];
+    : CAT[data.category] || fallbackCat;
 
-  const Icon = IconMap[data.icon];
+  const Icon = IconMap[data.icon || ''] || Package;
   // handles are fully visible on hover OR when node is selected
   const showH = hovered || selected;
 
@@ -87,7 +93,7 @@ const BaseNode: React.FC<CustomNodeProps> = ({ data, selected }) => {
         bg-white dark:bg-gray-900
         border-2 transition-all duration-200
         ${selected
-          ? `border-[${cat.accent}] shadow-xl`
+          ? `shadow-xl`
           : 'border-gray-200 dark:border-gray-700 shadow-md hover:shadow-lg hover:border-gray-300 dark:hover:border-gray-600'
         }
       `}
@@ -123,7 +129,7 @@ const BaseNode: React.FC<CustomNodeProps> = ({ data, selected }) => {
         {data.config && Object.keys(data.config).length > 0 && (
           <div className={`mt-2 px-2 py-1.5 rounded-lg text-[11px] font-mono ${cat.bg} ${cat.text}`}>
             {Object.entries(data.config).slice(0, 2).map(([k, v]) => (
-              <span key={k} className="block truncate">{k}: {String(v).substring(0, 24)}</span>
+              <span key={k} className="block truncate">{String(k)}: {String(v).substring(0, 24)}</span>
             ))}
           </div>
         )}
@@ -205,14 +211,25 @@ const BaseNode: React.FC<CustomNodeProps> = ({ data, selected }) => {
 };
 
 // ── Memoised exports ──────────────────────────────────────────────────────
-export const TriggerNode = memo(BaseNode);
-export const ActionNode = memo(BaseNode);
-export const LogicNode = memo(BaseNode);
+const MemoizedBaseNode = memo(BaseNode);
 
-export const nodeTypes = {
+export const TriggerNode = MemoizedBaseNode;
+export const ActionNode = MemoizedBaseNode;
+export const LogicNode = MemoizedBaseNode;
+
+// Dynamically generate nodeTypes for ALL available categories so ReactFlow knows how to render them
+const dynamicNodeTypes: Record<string, typeof MemoizedBaseNode> = {
   trigger: TriggerNode,
   action: ActionNode,
   logic: LogicNode,
 };
+
+// Inject Registry Categories
+const registryCategories = NodeRegistry.getAllCategories();
+registryCategories.forEach(cat => {
+  dynamicNodeTypes[cat.id] = MemoizedBaseNode;
+});
+
+export const nodeTypes = dynamicNodeTypes;
 
 export default BaseNode;

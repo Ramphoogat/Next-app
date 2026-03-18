@@ -1,17 +1,174 @@
 "use client";
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   X, Settings, Webhook, Clock, FileText, Zap, Mail, Globe,
-  Database, Bell, GitBranch, Timer, Split, Repeat, Trash2, Link2
+  Database, Bell, GitBranch, Timer, Split, Repeat, Trash2, Link2,
+  Lock, AlertCircle, ChevronDown, ChevronRight
 } from 'lucide-react';
-import { WorkflowNode, NodeConfig } from '@/types/workflow';
+import { WorkflowNode } from '@/types/workflow';
+import { NodeRegistry, NodeParameter, NodeParameterOption } from '@/workflow/core/nodeRegistry';
 
-// Icon mapping
+// ── Icons for node types ───────────────────────────────────────────────────
 const IconMap: Record<string, React.ElementType> = {
   Webhook, Clock, FileText, Zap, Mail, Globe, Database, Bell,
-  GitBranch, Timer, Split, Repeat, Link2
+  GitBranch, Timer, Split, Repeat, Link2, Settings
 };
+
+// ── Components ─────────────────────────────────────────────────────────────
+
+interface ConfigInputProps {
+  parameter: NodeParameter;
+  value: unknown;
+  onChange: (value: unknown) => void;
+}
+
+const ConfigInput: React.FC<ConfigInputProps> = ({ parameter, value, onChange }) => {
+  const commonClasses = "w-full px-3 py-2 rounded-lg text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/40 outline-none transition-all";
+
+  switch (parameter.type) {
+    case 'string':
+      return (
+        <input
+          type="text"
+          value={(value as string | number) ?? ''}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={parameter.label}
+          className={commonClasses}
+        />
+      );
+    case 'number':
+      return (
+        <input
+          type="number"
+          value={(value as string | number) ?? ''}
+          onChange={(e) => onChange(parseFloat(e.target.value))}
+          placeholder={parameter.label}
+          className={commonClasses}
+        />
+      );
+    case 'boolean':
+      return (
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={!!value}
+            onChange={(e) => onChange(e.target.checked)}
+            className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <span className="text-sm text-gray-700 dark:text-gray-300">{parameter.label}</span>
+        </div>
+      );
+    case 'select':
+      return (
+        <select
+          value={(value as string | number) ?? ''}
+          onChange={(e) => onChange(e.target.value)}
+          className={commonClasses}
+        >
+          <option value="">Select an option</option>
+          {parameter.options?.map((opt: NodeParameterOption) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+      );
+    case 'json':
+    case 'object':
+    case 'array':
+      return (
+        <textarea
+          value={typeof value === 'object' ? JSON.stringify(value, null, 2) : (value as string | number) ?? ''}
+          onChange={(e) => {
+            const val = e.target.value;
+            try {
+              onChange(JSON.parse(val));
+            } catch {
+              onChange(val);
+            }
+          }}
+          rows={5}
+          className={`${commonClasses} font-mono text-xs resize-none`}
+        />
+      );
+    case 'credentials':
+      return (
+        <div className="relative">
+          <select
+            value={(value as string | number) ?? ''}
+            onChange={(e) => onChange(e.target.value)}
+            className={`${commonClasses} pl-10`}
+          >
+            <option value="">Select Credentials...</option>
+            <option value="temp-id">Saved Credential #1</option>
+          </select>
+          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500" />
+        </div>
+      );
+    default:
+      return (
+        <div className="p-2 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/30 rounded-lg text-xs text-red-600">
+          Unsupported type: {parameter.type}
+        </div>
+      );
+  }
+};
+
+interface ParameterGroupProps {
+  name: string;
+  parameters: NodeParameter[];
+  config: Record<string, unknown>;
+  onUpdate: (key: string, value: unknown) => void;
+}
+
+const ParameterGroup: React.FC<ParameterGroupProps> = ({ name, parameters, config, onUpdate }) => {
+  const [isExpanded, setIsExpanded] = React.useState(true);
+
+  // Filter parameters based on dependencies
+  const visibleParams = parameters.filter(param => {
+    if (!param.dependsOn) return true;
+    const depValue = config[param.dependsOn.field];
+    return param.dependsOn.valueIn.includes(depValue);
+  });
+
+  if (visibleParams.length === 0) return null;
+
+  return (
+    <div className="border-b border-gray-100 dark:border-gray-800 last:border-0">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex items-center justify-between py-3 px-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+      >
+        <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">{name}</span>
+        {isExpanded ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />}
+      </button>
+
+      {isExpanded && (
+        <div className="px-4 pb-4 space-y-4">
+          {visibleParams.map(param => (
+            <div key={param.id} className="space-y-1.5">
+              <div className="flex items-center gap-1.5">
+                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                  {param.label}
+                  {param.required && <span className="text-red-500 ml-0.5">*</span>}
+                </label>
+              </div>
+              <ConfigInput
+                parameter={param}
+                value={config[param.id]}
+                onChange={(val) => onUpdate(param.id, val)}
+              />
+              <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-tight">
+                {param.description}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Main Panel ─────────────────────────────────────────────────────────────
 
 interface NodeConfigPanelProps {
   selectedNode: WorkflowNode | null;
@@ -20,486 +177,110 @@ interface NodeConfigPanelProps {
   onClose: () => void;
 }
 
-// Input component for consistent styling
-interface ConfigInputProps {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  type?: 'text' | 'number' | 'email';
-}
-
-const ConfigInput: React.FC<ConfigInputProps> = ({ label, value, onChange, placeholder, type = 'text' }) => (
-  <div className="space-y-1.5">
-    <label className="text-xs font-medium text-gray-600 dark:text-gray-400">{label}</label>
-    <input
-      type={type}
-      value={value || ''}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      className="
-        w-full px-3 py-2.5 rounded-xl text-sm
-        bg-gray-50 dark:bg-gray-800 
-        border border-gray-200 dark:border-gray-700
-        text-gray-900 dark:text-white
-        placeholder-gray-400
-        focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500
-        transition-all
-      "
-    />
-  </div>
-);
-
-// Select component
-interface ConfigSelectProps {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  options: { value: string; label: string }[];
-}
-
-const ConfigSelect: React.FC<ConfigSelectProps> = ({ label, value, onChange, options }) => (
-  <div className="space-y-1.5">
-    <label className="text-xs font-medium text-gray-600 dark:text-gray-400">{label}</label>
-    <select
-      value={value || ''}
-      onChange={(e) => onChange(e.target.value)}
-      className="
-        w-full px-3 py-2.5 rounded-xl text-sm
-        bg-gray-50 dark:bg-gray-800 
-        border border-gray-200 dark:border-gray-700
-        text-gray-900 dark:text-white
-        focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500
-        transition-all
-      "
-    >
-      <option value="">Select...</option>
-      {options.map(opt => (
-        <option key={opt.value} value={opt.value}>{opt.label}</option>
-      ))}
-    </select>
-  </div>
-);
-
-// Textarea component
-interface ConfigTextareaProps {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  rows?: number;
-}
-
-const ConfigTextarea: React.FC<ConfigTextareaProps> = ({ label, value, onChange, placeholder, rows = 4 }) => (
-  <div className="space-y-1.5">
-    <label className="text-xs font-medium text-gray-600 dark:text-gray-400">{label}</label>
-    <textarea
-      value={value || ''}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      rows={rows}
-      className="
-        w-full px-3 py-2.5 rounded-xl text-sm
-        bg-gray-50 dark:bg-gray-800 
-        border border-gray-200 dark:border-gray-700
-        text-gray-900 dark:text-white
-        placeholder-gray-400
-        focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500
-        transition-all resize-none
-      "
-    />
-  </div>
-);
-
-// Node-specific configuration panels
-const WebhookConfig: React.FC<{ config: NodeConfig; onUpdate: (config: NodeConfig) => void }> = ({ config, onUpdate }) => (
-  <div className="space-y-4">
-    <ConfigInput
-      label="Webhook URL"
-      value={(config as { url?: string }).url || ''}
-      onChange={(url) => onUpdate({ ...config, url })}
-      placeholder="Will be auto-generated"
-    />
-    <ConfigSelect
-      label="HTTP Method"
-      value={(config as { method?: string }).method || 'POST'}
-      onChange={(method) => onUpdate({ ...config, method: method as 'GET' | 'POST' | 'PUT' | 'DELETE' })}
-      options={[
-        { value: 'GET', label: 'GET' },
-        { value: 'POST', label: 'POST' },
-        { value: 'PUT', label: 'PUT' },
-        { value: 'DELETE', label: 'DELETE' },
-      ]}
-    />
-  </div>
-);
-
-const ScheduleConfig: React.FC<{ config: NodeConfig; onUpdate: (config: NodeConfig) => void }> = ({ config, onUpdate }) => (
-  <div className="space-y-4">
-    <ConfigInput
-      label="Cron Expression"
-      value={(config as { cron?: string }).cron || ''}
-      onChange={(cron) => onUpdate({ ...config, cron })}
-      placeholder="*/5 * * * *"
-    />
-    <ConfigSelect
-      label="Timezone"
-      value={(config as { timezone?: string }).timezone || 'UTC'}
-      onChange={(timezone) => onUpdate({ ...config, timezone })}
-      options={[
-        { value: 'UTC', label: 'UTC' },
-        { value: 'America/New_York', label: 'Eastern Time' },
-        { value: 'America/Los_Angeles', label: 'Pacific Time' },
-        { value: 'Europe/London', label: 'London' },
-        { value: 'Asia/Tokyo', label: 'Tokyo' },
-      ]}
-    />
-  </div>
-);
-
-const HttpRequestConfig: React.FC<{ config: NodeConfig; onUpdate: (config: NodeConfig) => void }> = ({ config, onUpdate }) => (
-  <div className="space-y-4">
-    <ConfigInput
-      label="URL"
-      value={(config as { url?: string }).url || ''}
-      onChange={(url) => onUpdate({ ...config, url })}
-      placeholder="https://api.example.com/endpoint"
-    />
-    <ConfigSelect
-      label="Method"
-      value={(config as { method?: string }).method || 'GET'}
-      onChange={(method) => onUpdate({ ...config, method })}
-      options={[
-        { value: 'GET', label: 'GET' },
-        { value: 'POST', label: 'POST' },
-        { value: 'PUT', label: 'PUT' },
-        { value: 'PATCH', label: 'PATCH' },
-        { value: 'DELETE', label: 'DELETE' },
-      ]}
-    />
-    <ConfigTextarea
-      label="Headers (JSON)"
-      value={(config as { headers?: string }).headers || ''}
-      onChange={(headers) => onUpdate({ ...config, headers })}
-      placeholder='{"Content-Type": "application/json"}'
-      rows={3}
-    />
-    <ConfigTextarea
-      label="Body"
-      value={(config as { body?: string }).body || ''}
-      onChange={(body) => onUpdate({ ...config, body })}
-      placeholder='{"key": "value"}'
-    />
-  </div>
-);
-
-const SendEmailConfig: React.FC<{ config: NodeConfig; onUpdate: (config: NodeConfig) => void }> = ({ config, onUpdate }) => (
-  <div className="space-y-4">
-    <ConfigInput
-      label="To"
-      value={(config as { to?: string }).to || ''}
-      onChange={(to) => onUpdate({ ...config, to })}
-      placeholder="recipient@example.com"
-      type="email"
-    />
-    <ConfigInput
-      label="Subject"
-      value={(config as { subject?: string }).subject || ''}
-      onChange={(subject) => onUpdate({ ...config, subject })}
-      placeholder="Email subject"
-    />
-    <ConfigTextarea
-      label="Body"
-      value={(config as { body?: string }).body || ''}
-      onChange={(body) => onUpdate({ ...config, body })}
-      placeholder="Email body content..."
-    />
-  </div>
-);
-
-const IfConditionConfig: React.FC<{ config: NodeConfig; onUpdate: (config: NodeConfig) => void }> = ({ config, onUpdate }) => (
-  <div className="space-y-4">
-    <ConfigInput
-      label="Field"
-      value={(config as { field?: string }).field || ''}
-      onChange={(field) => onUpdate({ ...config, field })}
-      placeholder="data.status"
-    />
-    <ConfigSelect
-      label="Operator"
-      value={(config as { operator?: string }).operator || 'equals'}
-      onChange={(operator) => onUpdate({ ...config, operator })}
-      options={[
-        { value: 'equals', label: 'Equals' },
-        { value: 'not-equals', label: 'Not Equals' },
-        { value: 'contains', label: 'Contains' },
-        { value: 'greater-than', label: 'Greater Than' },
-        { value: 'less-than', label: 'Less Than' },
-        { value: 'is-empty', label: 'Is Empty' },
-        { value: 'is-not-empty', label: 'Is Not Empty' },
-      ]}
-    />
-    <ConfigInput
-      label="Value"
-      value={(config as { value?: string }).value || ''}
-      onChange={(value) => onUpdate({ ...config, value })}
-      placeholder="Expected value"
-    />
-  </div>
-);
-
-const DelayConfig: React.FC<{ config: NodeConfig; onUpdate: (config: NodeConfig) => void }> = ({ config, onUpdate }) => (
-  <div className="space-y-4">
-    <ConfigInput
-      label="Duration"
-      value={String((config as { duration?: number }).duration || '')}
-      onChange={(duration) => onUpdate({ ...config, duration: parseInt(duration) || 0 })}
-      placeholder="5"
-      type="number"
-    />
-    <ConfigSelect
-      label="Unit"
-      value={(config as { unit?: string }).unit || 'seconds'}
-      onChange={(unit) => onUpdate({ ...config, unit })}
-      options={[
-        { value: 'seconds', label: 'Seconds' },
-        { value: 'minutes', label: 'Minutes' },
-        { value: 'hours', label: 'Hours' },
-        { value: 'days', label: 'Days' },
-      ]}
-    />
-  </div>
-);
-
-const DatabaseWriteConfig: React.FC<{ config: NodeConfig; onUpdate: (config: NodeConfig) => void }> = ({ config, onUpdate }) => (
-  <div className="space-y-4">
-    <ConfigInput
-      label="Collection"
-      value={(config as { collection?: string }).collection || ''}
-      onChange={(collection) => onUpdate({ ...config, collection })}
-      placeholder="users"
-    />
-    <ConfigSelect
-      label="Operation"
-      value={(config as { operation?: string }).operation || 'insert'}
-      onChange={(operation) => onUpdate({ ...config, operation })}
-      options={[
-        { value: 'insert', label: 'Insert' },
-        { value: 'update', label: 'Update' },
-        { value: 'upsert', label: 'Upsert' },
-        { value: 'delete', label: 'Delete' },
-      ]}
-    />
-    <ConfigTextarea
-      label="Query (JSON)"
-      value={(config as { query?: string }).query || ''}
-      onChange={(query) => onUpdate({ ...config, query })}
-      placeholder='{"_id": "..."}'
-      rows={3}
-    />
-    <ConfigTextarea
-      label="Data (JSON)"
-      value={(config as { data?: string }).data || ''}
-      onChange={(data) => onUpdate({ ...config, data })}
-      placeholder='{"field": "value"}'
-    />
-  </div>
-);
-
-const NotificationConfig: React.FC<{ config: NodeConfig; onUpdate: (config: NodeConfig) => void }> = ({ config, onUpdate }) => (
-  <div className="space-y-4">
-    <ConfigSelect
-      label="Channel"
-      value={(config as { channel?: string }).channel || 'email'}
-      onChange={(channel) => onUpdate({ ...config, channel })}
-      options={[
-        { value: 'email', label: 'Email' },
-        { value: 'sms', label: 'SMS' },
-        { value: 'push', label: 'Push Notification' },
-        { value: 'slack', label: 'Slack' },
-      ]}
-    />
-    <ConfigInput
-      label="Recipient"
-      value={(config as { recipient?: string }).recipient || ''}
-      onChange={(recipient) => onUpdate({ ...config, recipient })}
-      placeholder="user@example.com or @channel"
-    />
-    <ConfigTextarea
-      label="Message"
-      value={(config as { message?: string }).message || ''}
-      onChange={(message) => onUpdate({ ...config, message })}
-      placeholder="Notification message..."
-    />
-  </div>
-);
-
-// Config for the Node Connector
-const NodeConnectorConfig: React.FC<{ config: NodeConfig; onUpdate: (config: NodeConfig) => void }> = ({ config, onUpdate }) => (
-  <div className="space-y-4">
-    <div className="p-4 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30">
-      <div className="flex items-start gap-3">
-        <Link2 className="w-5 h-5 text-indigo-500 flex-shrink-0 mt-0.5" />
-        <div>
-          <p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300 mb-1">Node Connector</p>
-          <p className="text-xs text-indigo-600/80 dark:text-indigo-400/80 leading-relaxed">
-            This node bridges two or more triggers or nodes together. Connect any output handle to this
-            node&rsquo;s input, then connect this node&rsquo;s output to the next step.
-          </p>
-        </div>
-      </div>
-    </div>
-    <ConfigInput
-      label="Label"
-      value={(config as { label?: string }).label || ''}
-      onChange={(label) => onUpdate({ ...config, label })}
-      placeholder="e.g. Merge Triggers"
-    />
-    <ConfigTextarea
-      label="Notes"
-      value={(config as { notes?: string }).notes || ''}
-      onChange={(notes) => onUpdate({ ...config, notes })}
-      placeholder="Describe what this connector does..."
-      rows={3}
-    />
-  </div>
-);
-
-// Generic config for nodes without specific panel
-const GenericConfig: React.FC<{ config: NodeConfig; onUpdate: (config: NodeConfig) => void }> = ({ config, onUpdate }) => (
-  <div className="space-y-4">
-    <ConfigTextarea
-      label="Configuration (JSON)"
-      value={JSON.stringify(config, null, 2)}
-      onChange={(value) => {
-        try {
-          onUpdate(JSON.parse(value));
-        } catch {
-          // Invalid JSON, ignore
-        }
-      }}
-      placeholder='{"key": "value"}'
-      rows={6}
-    />
-  </div>
-);
-
-// Renders the correct config form for a given node type.
-// Implemented as a plain function returning JSX (NOT a component) to
-// avoid React's "components created during render" error.
-const renderConfig = (
-  nodeType: string,
-  config: NodeConfig,
-  onUpdate: (config: NodeConfig) => void
-): React.ReactNode => {
-  const props = { config, onUpdate };
-  switch (nodeType) {
-    case 'webhook': return <WebhookConfig {...props} />;
-    case 'schedule': return <ScheduleConfig {...props} />;
-    case 'node-connector': return <NodeConnectorConfig {...props} />;
-    case 'send-email': return <SendEmailConfig {...props} />;
-    case 'http-request': return <HttpRequestConfig {...props} />;
-    case 'database-write': return <DatabaseWriteConfig {...props} />;
-    case 'notification': return <NotificationConfig {...props} />;
-    case 'if-condition': return <IfConditionConfig {...props} />;
-    case 'delay': return <DelayConfig {...props} />;
-    default: return <GenericConfig {...props} />;
-  }
-};
-
 const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({
   selectedNode,
   onUpdateNode,
   onDeleteNode,
   onClose
 }) => {
+  const nodeDef = useMemo(() => {
+    if (!selectedNode) return null;
+    // nodeType can be internal id like 'gmail' or legacy 'gmail-send'
+    return NodeRegistry.getNodeById(selectedNode.data.nodeType as string);
+  }, [selectedNode]);
+
   if (!selectedNode) {
     return (
-      <div className="h-full flex flex-col bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800">
-        <div className="flex-1 flex items-center justify-center p-6">
-          <div className="text-center">
-            <Settings className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Select a node to configure
-            </p>
-          </div>
-        </div>
+      <div className="h-full flex flex-col items-center justify-center p-6 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 text-center">
+        <Settings className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-3 animate-pulse-slow" />
+        <p className="text-sm text-gray-500 dark:text-gray-400">Select a node to customize its functionality</p>
       </div>
     );
   }
 
-  const Icon = IconMap[selectedNode.data.icon];
+  const nodeConfig = (selectedNode.data.config as Record<string, unknown>) || {};
+  const Icon = IconMap[selectedNode.data.icon] || Settings;
 
-  const handleConfigUpdate = (newConfig: NodeConfig) => {
-    onUpdateNode(selectedNode.id, { config: newConfig });
+  const handleUpdate = (key: string, value: unknown) => {
+    onUpdateNode(selectedNode.id, {
+      config: { ...nodeConfig, [key]: value }
+    });
   };
 
-  const categoryColors = {
-    trigger: 'from-emerald-500 to-emerald-600',
-    action: 'from-blue-500 to-blue-600',
-    logic: 'from-purple-500 to-purple-600',
-  };
+  // Group parameters
+  const groupedParams: Record<string, NodeParameter[]> = {};
+  nodeDef?.parameters.forEach(p => {
+    if (!groupedParams[p.group]) groupedParams[p.group] = [];
+    groupedParams[p.group].push(p);
+  });
 
   return (
-    <div className="h-full flex flex-col bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800">
+    <div className="h-full flex flex-col bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-2xl">
       {/* Header */}
-      <div className={`bg-gradient-to-r ${categoryColors[selectedNode.data.category]} p-4`}>
-        <div className="flex items-center justify-between">
+      <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-white/20">
-              {Icon && <Icon className="w-5 h-5 text-white" />}
+            <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500 shadow-sm border border-blue-500/20">
+              <Icon className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white">{selectedNode.data.label}</h3>
-              <p className="text-xs text-white/70 capitalize">{selectedNode.data.category} Node</p>
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white leading-none mb-1">{selectedNode.data.label}</h3>
+              <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-tighter">
+                {selectedNode.data.category} • {selectedNode.data.nodeType}
+              </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-white/20 transition-colors"
-          >
-            <X className="w-4 h-4 text-white" />
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+            <X className="w-4 h-4 text-gray-500" />
           </button>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">Display Name</label>
+          <input
+            type="text"
+            value={selectedNode.data.label}
+            onChange={(e) => onUpdateNode(selectedNode.id, { label: e.target.value })}
+            className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm shadow-sm focus:ring-2 focus:ring-blue-500/40 outline-none transition-all"
+          />
         </div>
       </div>
 
-      {/* Node name edit */}
-      <div className="p-4 border-b border-gray-200 dark:border-gray-800">
-        <ConfigInput
-          label="Node Name"
-          value={selectedNode.data.label}
-          onChange={(label) => onUpdateNode(selectedNode.id, { label })}
-          placeholder="Node name"
-        />
-      </div>
-
-      {/* Configuration */}
-      <div className="flex-1 overflow-y-auto p-4">
-        <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">
-          Configuration
-        </h4>
-        {renderConfig(
-          selectedNode.data.nodeType,
-          selectedNode.data.config ?? {},
-          handleConfigUpdate
+      {/* Dynamic Parameters */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-800">
+        {nodeDef ? (
+          Object.entries(groupedParams).map(([group, params]) => (
+            <ParameterGroup
+              key={group}
+              name={group}
+              parameters={params}
+              config={nodeConfig}
+              onUpdate={handleUpdate}
+            />
+          ))
+        ) : (
+          <div className="p-6">
+            <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30">
+              <div className="flex gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                <p className="text-xs text-amber-700 dark:text-amber-400 leading-tight">
+                  No parameter metadata found for {selectedNode.data.nodeType} node.
+                  Check your node registration.
+                </p>
+              </div>
+            </div>
+          </div>
         )}
       </div>
 
-      {/* Footer actions */}
-      <div className="p-4 border-t border-gray-200 dark:border-gray-800">
+      {/* Footer */}
+      <div className="p-4 bg-gray-50 dark:bg-gray-800/30 border-t border-gray-200 dark:border-gray-800">
         <button
           onClick={() => onDeleteNode(selectedNode.id)}
-          className="
-            w-full flex items-center justify-center gap-2 
-            px-4 py-2.5 rounded-xl
-            bg-red-50 dark:bg-red-500/10
-            text-red-600 dark:text-red-400
-            hover:bg-red-100 dark:hover:bg-red-500/20
-            transition-colors text-sm font-medium
-          "
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-red-500/5 hover:bg-red-500 text-red-600 hover:text-white border border-red-500/20 transition-all duration-300 group"
         >
-          <Trash2 className="w-4 h-4" />
-          Delete Node
+          <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
+          <span className="text-sm font-semibold">Delete Node</span>
         </button>
       </div>
     </div>

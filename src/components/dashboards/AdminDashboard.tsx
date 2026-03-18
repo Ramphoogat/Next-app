@@ -3,15 +3,15 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
     FiUsers,
-    FiSettings,
     FiActivity,
-    FiShield,
     FiLayout,
-    FiTrash2,
-    FiMinimize2,
-    FiCalendar,
+    FiShield,
     FiMessageSquare,
+    FiCalendar,
+    FiSettings,
     FiChevronDown,
+    FiMinimize2,
+    FiTrash2,
 } from "react-icons/fi";
 
 import api from "@/api/axios";
@@ -19,7 +19,6 @@ import { AxiosError } from "axios";
 import DashboardLayout from "@/components/DashboardLayout";
 import ProfileEditModal from "@/components/ProfileEditModal";
 import Loader from "@/components/Loader";
-import FormSection from "@/components/FormSection";
 import Requests from "@/components/requests";
 import CreateUserModal from "@/components/CreateUserModal";
 
@@ -39,6 +38,7 @@ const N8nWorkflow = dynamic(() => import("@/components/workflow/Workflow"), { ss
 import { type IUser, type IAdminStats } from "@/types/dashboard";
 import { BsFillKanbanFill } from "react-icons/bs";
 import { TbArrowsExchange2 } from "react-icons/tb";
+import FormSection from "../FormSection";
 
 const idToSlug = {
     Overview: "overview",
@@ -591,6 +591,9 @@ const AdminDashboard = () => {
                 ) : activeTab === "Form" ? (
                     <div className="flex-1 overflow-y-auto no-scrollbar space-y-8">
                         <FormSection />
+                    </div>
+                ) : activeTab === "Templates" ? (
+                    <div className="flex-1 overflow-y-auto no-scrollbar space-y-8">
                     </div>
                 ) : activeTab === "Requests" ? (
                     <div className="flex-1 overflow-y-auto no-scrollbar space-y-8">
