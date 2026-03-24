@@ -1,92 +1,80 @@
-import { TemplateEngine } from '@/workflow/generator/templateEngine';
-import { NodeRegistry } from '@/workflow/core/nodeRegistry';
-import { IWorkflow } from '@/types/workflow';
+"use server";
+
+export interface OpenRouterMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+export interface OpenRouterGenerationOptions {
+  model?: string;
+  messages: OpenRouterMessage[];
+  temperature?: number;
+  max_tokens?: number;
+}
+
+export interface AIResponse {
+  success: boolean;
+  content?: string;
+  error?: string;
+}
 
 /**
- * AI-powered Workflow Generator
+ * Core function to generate content using OpenRouter API
  */
-export class AIGenerator {
-  /**
-   * Simulates an AI prompt that parses natural language into a workflow
-   * e.g., "Send Gmail to raam@gmail.com when Stripe payment > 1000"
-   * @param prompt User's natural language input
-   */
-  static generateFromPrompt(prompt: string): IWorkflow | null {
-    const lowerPrompt = prompt.toLowerCase();
-    
-    // In a real implementation, we would call OpenAI / Anthropic here
-    // to classify the intent, extract trigger/action nodes and their configuration.
-    
-    // Here we use a heuristic matching for demonstration
-    const availableNodes = NodeRegistry.getAllNodes();
-    
-    // Extract node mentions
-    const mentionedNodes = availableNodes.filter(node => 
-      lowerPrompt.includes(node.id.toLowerCase()) || lowerPrompt.includes(node.name.toLowerCase())
-    );
+export async function generateContent(options: OpenRouterGenerationOptions): Promise<AIResponse> {
+  const apiKey = process.env.OPENROUTER_API_KEY;
 
-    if (mentionedNodes.length >= 2) {
-      // Assuming the first mentioned trigger node is the trigger, and the next is the action
-      // Or we can just filter by their capabilities
-      const triggers = mentionedNodes.filter(n => n.triggers.length > 0);
-      const actions = mentionedNodes.filter(n => n.actions.length > 0);
-
-      if (triggers.length > 0 && actions.length > 0) {
-        const trigger = triggers[0];
-        const action = actions[0];
-        
-        // Simulating Advanced AI Extraction 👇
-        console.log(`🧠 AI Extracted Intent from: "${prompt}"`);
-        
-        // Mocking parameter extraction
-        const simulatedConfig: Record<string, unknown> = {};
-        
-        // Extract Emails (e.g. raam@gmail.com)
-        const emailMatch = prompt.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi);
-        if (emailMatch) {
-          simulatedConfig.to = emailMatch[0];
-          console.log(`   ► Extracted Email: ${simulatedConfig.to}`);
-        }
-        
-        // Extract Numbers/Filters (e.g. > 1000 or >1000)
-        const filterMatch = prompt.match(/(>|<|>=|<=|=)\s*(\d+)/);
-        if (filterMatch) {
-          simulatedConfig.amount_filter = `${filterMatch[1]}${filterMatch[2]}`;
-          console.log(`   ► Extracted Filter: ${simulatedConfig.amount_filter}`);
-        }
-
-        // Generate the base workflow
-        const workflow = TemplateEngine.generateTriggerActionTemplate(
-          trigger.id,
-          trigger.triggers[0] || 'default_trigger',
-          action.id,
-          action.actions[0] || 'default_action'
-        );
-
-        // Inject extracted parameters into the generated nodes configuration!
-        if (workflow && workflow.nodes.length >= 2) {
-          workflow.nodes[0].data.config = {
-             ...(workflow.nodes[0].data.config as Record<string, unknown>),
-             filters: simulatedConfig.amount_filter ? { amount: simulatedConfig.amount_filter } : {}
-          };
-
-          workflow.nodes[1].data.config = {
-             ...(workflow.nodes[1].data.config as Record<string, unknown>),
-             params: simulatedConfig.to ? { to: simulatedConfig.to } : {}
-          };
-        }
-
-        console.log("   ► AI Execution Graph Ready: ", JSON.stringify({
-           trigger: { node: trigger.id, event: trigger.triggers[0], filters: simulatedConfig.amount_filter ? { amount: simulatedConfig.amount_filter } : {} },
-           action: { node: action.id, event: action.actions[0], params: simulatedConfig.to ? { to: simulatedConfig.to } : {} }
-        }, null, 2));
-
-        return workflow;
-      }
-    }
-
-    // Fallback: couldn't parse 
-    console.warn("AI couldn't fully parse the prompt securely to a workflow. Mentions found:", mentionedNodes.map(n => n.name));
-    return null;
+  if (!apiKey) {
+    throw new Error('OPENROUTER_API_KEY is not defined in environment variables');
   }
+
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      // Optional: helps OpenRouter attribute requests to your app correctly
+      'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+      'X-Title': 'Next App AI Workflow',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: options.model || 'openai/gpt-oss-20b:free', // We can change default model
+      messages: options.messages,
+      temperature: options.temperature,
+      max_tokens: options.max_tokens,
+    })
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    let errorMessage = `OpenRouter API error: ${response.status}`;
+    try {
+      const parsed = JSON.parse(errorBody);
+      if (parsed.error?.metadata?.raw) {
+        errorMessage = parsed.error.metadata.raw;
+      } else if (parsed.error?.message) {
+        errorMessage = parsed.error.message;
+      }
+    } catch (e) {
+      errorMessage = errorBody;
+    }
+    return { success: false, error: errorMessage };
+  }
+
+  const data = await response.json();
+
+  // Return the textual content from the generated message
+  return { success: true, content: data.choices?.[0]?.message?.content || '' };
+}
+
+/**
+ * Helper function for simple single-prompt text generation
+ */
+export async function generateText(prompt: string, model: string = 'openai/gpt-oss-20b:free'): Promise<AIResponse> {
+  return generateContent({
+    model,
+    messages: [
+      { role: 'user', content: prompt }
+    ]
+  });
 }

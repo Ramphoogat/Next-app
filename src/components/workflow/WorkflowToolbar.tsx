@@ -11,7 +11,7 @@ import { WorkflowStatus } from '@/types/workflow';
 
 // ─── Workflow Guide Modal ──────────────────────────────────────────────────
 
-const TABS = ['Overview', 'Nodes', 'HTTP Methods', 'Tips'] as const;
+const TABS = ['Overview', 'Nodes', 'HTTP Methods', 'Templates', 'Tips'] as const;
 type Tab = typeof TABS[number];
 
 const GuideSection: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
@@ -183,6 +183,37 @@ export const WorkflowGuide: React.FC<{ onClose: () => void }> = ({ onClose }) =>
               <MethodCard method="PUT" color="bg-amber-50 border-amber-200 dark:bg-amber-500/10 dark:border-amber-500/30" emoji="✏️" title="Update / Replace existing data" simple="Replace an existing record completely with new information." analogy="Like erasing what you wrote on a whiteboard and writing something completely new." example="PUT /api/users/123 — completely replace user 123's data." />
               <MethodCard method="PATCH" color="bg-orange-50 border-orange-200 dark:bg-orange-500/10 dark:border-orange-500/30" emoji="🩹" title="Partially update data" simple="Update only a few fields of an existing record." analogy="Like using correction fluid on just one word, not rewriting the whole page." example="PATCH /api/users/123 — update only the user's email address." />
               <MethodCard method="DELETE" color="bg-red-50 border-red-200 dark:bg-red-500/10 dark:border-red-500/30" emoji="🗑️" title="Remove data" simple="Tell the server to permanently delete a specific record." analogy="Like throwing something in the trash — it's gone." example="DELETE /api/users/123 — permanently delete user 123." />
+            </div>
+          )}
+
+          {/* ── Templates ────────────────────────────── */}
+          {tab === 'Templates' && (
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-4">
+                Jumpstart your automation with pre-built <strong className="text-gray-900 dark:text-white">Templates</strong> or generate custom ones using AI.
+              </p>
+              <GuideSection title="Using Pre-built Templates">
+                <div className="flex gap-3 mb-4 p-3 rounded-xl border bg-blue-50 border-blue-200 dark:bg-blue-500/10 dark:border-blue-500/30">
+                  <span className="text-lg flex-shrink-0">📦</span>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5">Browse the Library</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                      Go to the Templates tab to find hundreds of ready-to-use workflows for common use cases. Click to instantly create a new workflow from any template.
+                    </p>
+                  </div>
+                </div>
+              </GuideSection>
+              <GuideSection title="AI Generator">
+                <div className="flex gap-3 mb-4 p-3 rounded-xl border bg-purple-50 border-purple-200 dark:bg-purple-500/10 dark:border-purple-500/30">
+                  <span className="text-lg flex-shrink-0">✨</span>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5">Describe what you need</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                      Can't find a template? Use the AI Generator at the bottom of the Templates page. Just type what you want to achieve (e.g. "When a GitHub issue opens, send a Slack message") and the AI will suggest a personalized template architecture for you.
+                    </p>
+                  </div>
+                </div>
+              </GuideSection>
             </div>
           )}
 

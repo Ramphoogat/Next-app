@@ -8,6 +8,7 @@ import WorkflowCanvas from './WorkflowCanvas';
 import NodeConfigPanel from './NodeConfigPanel';
 import WorkflowToolbar from './WorkflowToolbar';
 import { WorkflowNode, WorkflowEdge, IWorkflow, WorkflowStatus, NodeLibraryItem } from '@/types/workflow';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface WorkflowBuilderProps {
   workflow?: IWorkflow;
@@ -38,6 +39,8 @@ const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
+  const [isLibraryOpen, setIsLibraryOpen] = useState(true);
+  const [isConfigOpen, setIsConfigOpen] = useState(true);
 
   // ── History for undo/redo ─────────────────────────────────────────────────
   const [history, setHistory] = useState<{ nodes: WorkflowNode[]; edges: WorkflowEdge[] }[]>([]);
@@ -198,31 +201,41 @@ const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
       />
 
       {/* 3-panel layout */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left panel — Node Library */}
-        <div className="w-72 flex-shrink-0">
-          <NodeLibrary onAddNode={handleAddNode} />
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Left panel — collapses to 0 */}
+        <div
+          className={`flex-shrink-0 overflow-hidden transition-all duration-300 ease-in-out ${isLibraryOpen ? 'w-72 min-w-[18rem]' : 'w-0 min-w-0'}`}
+        >
+          <div className="w-72 h-full border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+            <NodeLibrary onAddNode={handleAddNode} />
+          </div>
         </div>
 
-        {/* Center panel — Workflow Canvas */}
-        <WorkflowCanvas
-          initialNodes={nodes}
-          initialEdges={edges}
-          onNodesChange={handleNodesChange}
-          onEdgesChange={handleEdgesChange}
-          onNodeSelect={handleNodeSelect}
-          reactFlowInstance={reactFlowInstance}
-          setReactFlowInstance={setReactFlowInstance}
-        />
-
-        {/* Right panel — Node Configuration */}
-        <div className="w-80 flex-shrink-0">
-          <NodeConfigPanel
-            selectedNode={selectedNode}
-            onUpdateNode={handleUpdateNode}
-            onDeleteNode={handleDeleteNode}
-            onClose={() => setSelectedNode(null)}
+        {/* Center panel — grows to fill available space */}
+        <div className="flex-1 min-w-0 relative z-0">
+          <WorkflowCanvas
+            initialNodes={nodes}
+            initialEdges={edges}
+            onNodesChange={handleNodesChange}
+            onEdgesChange={handleEdgesChange}
+            onNodeSelect={handleNodeSelect}
+            reactFlowInstance={reactFlowInstance}
+            setReactFlowInstance={setReactFlowInstance}
           />
+        </div>
+
+        {/* Right panel — collapses to 0 */}
+        <div
+          className={`flex-shrink-0 overflow-hidden transition-all duration-300 ease-in-out ${isConfigOpen ? 'w-80 min-w-[20rem]' : 'w-0 min-w-0'}`}
+        >
+          <div className="w-80 h-full border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+            <NodeConfigPanel
+              selectedNode={selectedNode}
+              onUpdateNode={handleUpdateNode}
+              onDeleteNode={handleDeleteNode}
+              onClose={() => setSelectedNode(null)}
+            />
+          </div>
         </div>
       </div>
     </div>

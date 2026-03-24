@@ -4,6 +4,10 @@ import React, { useState, useMemo } from 'react';
 import { Search, ChevronDown, Package, Zap, ArrowRight, Grid } from 'lucide-react';
 import nodesData from '@/workflow/data/nodes.json';
 import categoriesData from '@/workflow/data/categories.json';
+import { generateText } from '@/workflow/ai/aiGenerator';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import router from 'next/router';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface Category {
@@ -21,22 +25,6 @@ interface NodeDef {
   icon: string;
   templatesCount?: number;
 }
-
-// ── Mock Template Counts ──────────────────────────────────────────────────
-const MOCK_TEMPLATE_COUNTS: Record<string, number> = {
-  http_request: 12,
-  webhook: 8,
-  slack: 15,
-  gmail: 20,
-  stripe: 6,
-  github: 9,
-  if: 25,
-  merge: 4,
-  wait: 3,
-  set: 10,
-  gmail_trigger: 7,
-  outlook_trigger: 5,
-};
 
 // ── BrowseIntegrations Component ──────────────────────────────────────────
 interface BrowseIntegrationsProps {
@@ -80,7 +68,7 @@ const BrowseIntegrations: React.FC<BrowseIntegrationsProps> = ({
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        
+
         <div className="relative min-w-[200px]">
           <select
             className="w-full appearance-none pl-4 pr-10 py-2.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm focus:ring-2 focus:ring-blue-500/40 outline-none transition-all shadow-sm cursor-pointer"
@@ -114,7 +102,7 @@ const BrowseIntegrations: React.FC<BrowseIntegrationsProps> = ({
                 </span>
               )}
             </div>
-            
+
             <h3 className="font-bold text-gray-900 dark:text-white mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{node.name}</h3>
             <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">
               {node.triggers.length > 0 ? 'Trigger' : 'Action'}
@@ -124,34 +112,47 @@ const BrowseIntegrations: React.FC<BrowseIntegrationsProps> = ({
               <span>{mode === 'templates' ? 'View Templates' : 'Use Integration'}</span>
               <ArrowRight className="ml-1 w-3 h-3" />
             </div>
-            
+
             {/* Background decoration */}
             <div className="absolute top-0 right-0 -mr-4 -mt-4 w-16 h-16 bg-blue-500/5 rounded-full blur-xl group-hover:bg-blue-500/10 transition-colors" />
           </div>
         ))}
-
-        {filteredNodes.length === 0 && (
-          <div className="col-span-full py-12 text-center">
-            <Package className="w-12 h-12 text-gray-200 dark:text-gray-700 mx-auto mb-3" />
-            <p className="text-gray-500 dark:text-gray-400 text-sm">No integrations found matching your criteria</p>
-          </div>
-        )}
       </div>
     </div>
   );
 };
 
-// ── TemplatesPage Component ───────────────────────────────────────────────
-export default function TemplatesPage() {
-  const [selectedCategoryId, setSelectedCategoryId] = useState('all');
+import { IN8nTemplate } from './templateUtils';
 
-  // Load and enrich nodes with template counts
-  const nodes: NodeDef[] = useMemo(() => {
-    return (nodesData as NodeDef[]).map(node => ({
-      ...node,
-      templatesCount: MOCK_TEMPLATE_COUNTS[node.id] || 0
-    }));
-  }, []);
+interface TemplatesPageProps {
+  onUseTemplate?: (template: IN8nTemplate) => void;
+}
+
+export default function TemplatesPage({ onUseTemplate }: TemplatesPageProps) {
+  const [selectedCategoryId, setSelectedCategoryId] = useState('all');
+  const [isAIGeneratorOpen, setIsAIGeneratorOpen] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [aiResult, setAiResult] = useState('');
+
+  const handleAIGenerate = async () => {
+    if (!aiPrompt.trim() || isGenerating) return;
+    setIsGenerating(true);
+    setAiResult('');
+    try {
+      const response = await generateText(aiPrompt);
+      if (response.success && response.content) {
+        setAiResult(response.content);
+      } else {
+        setAiResult(`Error: ${response.error || 'Failed to generate template.'}`);
+      }
+    } catch (error) {
+      console.error(error);
+      setAiResult('Error: An unexpected error occurred.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const categories = categoriesData as Category[];
 
@@ -164,56 +165,15 @@ export default function TemplatesPage() {
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-12 animate-in fade-in duration-500">
       {/* Hero Header */}
-      <section className="relative overflow-hidden p-8 md:p-12 rounded-[2rem] bg-gray-900 text-white shadow-2xl">
-        <div className="relative z-10 max-w-2xl">
+      <section className="relative overflow-hidden p-8 md:p-12 rounded-[2rem] bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800 shadow-xl dark:shadow-2xl transition-colors text-center">
+        <div className="relative z-10 max-w-2xl mx-auto">
           <h1 className="text-4xl md:text-5xl font-black mb-4 tracking-tight leading-tight">
             Workflow Templates
           </h1>
-          <p className="text-gray-400 text-lg md:text-xl leading-relaxed">
+          <p className="text-gray-600 dark:text-gray-400 text-lg md:text-xl leading-relaxed mx-auto">
             Choose from hundreds of pre-built integrations or start with a custom template to automate your business processes.
           </p>
         </div>
-        
-        {/* Background blobs */}
-        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-blue-600/20 rounded-full blur-[100px] -mr-32 -mt-32" />
-        <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-purple-600/10 rounded-full blur-[80px] -ml-20 -mb-20" />
-      </section>
-
-      {/* Featured / Smart Templates Placeholder */}
-      <section>
-        <div className="flex items-center gap-3 mb-6">
-          <Zap className="w-6 h-6 text-amber-500" />
-          <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Featured Templates</h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="p-6 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg cursor-pointer hover:scale-[1.01] transition-transform">
-            <h3 className="text-xl font-bold mb-2">Social Media Auto-Poster</h3>
-            <p className="opacity-80 text-sm mb-4">Post new content to Twitter and LinkedIn automatically when you publish a blog post.</p>
-            <span className="px-3 py-1 bg-white/20 rounded-lg text-xs font-bold uppercase tracking-wider">Most Popular</span>
-          </div>
-          <div className="p-6 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg cursor-pointer hover:scale-[1.01] transition-transform">
-            <h3 className="text-xl font-bold mb-2">Stripe Revenue Dashboard</h3>
-            <p className="opacity-80 text-sm mb-4">Sync Stripe payments to a Google Sheet and send a Slack daily update.</p>
-            <span className="px-3 py-1 bg-white/20 rounded-lg text-xs font-bold uppercase tracking-wider">Financials</span>
-          </div>
-        </div>
-      </section>
-
-      {/* Browse Integrations Section */}
-      <section>
-        <div className="flex items-center gap-3 mb-6">
-          <Grid className="w-6 h-6 text-blue-500" />
-          <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Browse by Integration</h2>
-        </div>
-        
-        <BrowseIntegrations
-          categories={categories}
-          nodes={nodes}
-          selectedCategoryId={selectedCategoryId}
-          onSelectCategory={setSelectedCategoryId}
-          onUseIntegration={handleUseIntegration}
-          mode="templates"
-        />
       </section>
 
       {/* AI Generator CTA */}
@@ -222,9 +182,96 @@ export default function TemplatesPage() {
         <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-xl mx-auto">
           Use our AI Generator to build a custom workflow template just by describing your needs.
         </p>
-        <button className="px-8 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg shadow-blue-500/25 transition-all">
-          Try AI Generator
-        </button>
+        {!isAIGeneratorOpen ? (
+          <button
+            onClick={() => setIsAIGeneratorOpen(true)}
+            className="px-8 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg shadow-blue-500/25 transition-all"
+          >
+            Try AI Generator
+          </button>
+        ) : (
+          <div className="max-w-2xl mx-auto space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="relative flex flex-col w-full bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-500/30 rounded-2xl shadow-sm focus-within:ring-2 focus-within:ring-blue-500/50 focus-within:border-transparent transition-all overflow-hidden min-h-[160px]">
+              <textarea
+                id='textarea-ai'
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleAIGenerate();
+                  }
+                }}
+                placeholder="Describe the workflow you want to build..."
+                className="w-full bg-transparent flex-1 px-6 pt-6 pb-2 text-gray-900 dark:text-white outline-none resize-none"
+                disabled={isGenerating}
+              />
+              <div className="flex justify-between items-center px-4 pb-4">
+                <span className="text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2">
+                  Shift + Enter for new line
+                </span>
+                <button
+                  onClick={handleAIGenerate}
+                  disabled={isGenerating || !aiPrompt.trim()}
+                  className="p-3 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:dark:bg-blue-500/50 disabled:cursor-not-allowed text-white transition-all shadow-md flex items-center justify-center group"
+                >
+                  {isGenerating ? <Zap className="w-5 h-5 animate-pulse" /> : <ArrowRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />}
+                </button>
+              </div>
+            </div>
+
+            {aiResult && (
+              <div className="mt-6 p-6 md:p-8 rounded-2xl bg-white dark:bg-gray-800 border border-blue-100 dark:border-blue-500/20 text-left shadow-lg animate-in fade-in slide-in-from-top-4 duration-500 overflow-x-auto">
+                <div className="flex items-center gap-2 mb-6">
+                  <Zap className="w-5 h-5 text-blue-500" />
+                  <h4 className="font-bold text-gray-900 dark:text-white">AI Suggestion</h4>
+                </div>
+                <div className="text-gray-700 dark:text-gray-300">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      h1: ({ node, ...props }) => <h1 className="text-2xl font-black mt-8 mb-4 text-gray-900 dark:text-white leading-snug" {...props} />,
+                      h2: ({ node, ...props }) => <h2 className="text-xl font-bold mt-6 mb-3 text-gray-900 dark:text-white leading-snug" {...props} />,
+                      h3: ({ node, ...props }) => <h3 className="text-lg font-bold mt-5 mb-2 text-gray-900 dark:text-white leading-snug" {...props} />,
+                      p: ({ node, ...props }) => <p className="mb-4 leading-relaxed" {...props} />,
+                      ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-4 space-y-2" {...props} />,
+                      ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-4 space-y-2" {...props} />,
+                      li: ({ node, ...props }) => <li className="pl-2" {...props} />,
+                      strong: ({ node, ...props }) => <strong className="font-bold text-gray-900 dark:text-white" {...props} />,
+                      code: ({ node, inline, className, children, ...props }: any) => {
+                        return inline ? (
+                          <code className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-sm text-blue-600 dark:text-blue-400 font-mono font-semibold" {...props}>
+                            {children}
+                          </code>
+                        ) : (
+                          <div className="relative my-6 rounded-xl overflow-hidden bg-[#0d1117] border border-gray-800 shadow-md">
+                            <div className="flex items-center px-4 py-2.5 bg-[#161b22] border-b border-gray-800">
+                              <div className="flex gap-1.5 mr-auto">
+                                <div className="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/50" />
+                                <div className="w-3 h-3 rounded-full bg-yellow-500/20 border border-yellow-500/50" />
+                                <div className="w-3 h-3 rounded-full bg-green-500/20 border border-green-500/50" />
+                              </div>
+                            </div>
+                            <pre className="p-5 overflow-x-auto text-[13px] text-gray-300 font-mono leading-relaxed" {...props}>
+                              <code>{children}</code>
+                            </pre>
+                          </div>
+                        );
+                      },
+                      blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-blue-500 pl-5 py-2 my-5 bg-blue-50 dark:bg-blue-500/10 text-gray-800 dark:text-gray-200 rounded-r-xl italic" {...props} />,
+                      table: ({ node, ...props }) => <div className="overflow-x-auto mb-6 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm"><table className="w-full text-left border-collapse text-sm" {...props} /></div>,
+                      th: ({ node, ...props }) => <th className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700 px-5 py-3.5 font-bold text-gray-900 dark:text-white whitespace-nowrap" {...props} />,
+                      td: ({ node, ...props }) => <td className="border-b border-gray-100 dark:border-gray-800 px-5 py-3 text-gray-700 dark:text-gray-300 align-top" {...props} />,
+                      a: ({ node, ...props }) => <a className="text-blue-600 dark:text-blue-400 hover:underline font-medium hover:text-blue-700 dark:hover:text-blue-300 transition-colors" {...props} />
+                    }}
+                  >
+                    {aiResult}
+                  </ReactMarkdown>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </section>
     </div>
   );

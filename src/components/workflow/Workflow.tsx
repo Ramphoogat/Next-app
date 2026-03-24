@@ -412,9 +412,7 @@ const WorkflowListView: React.FC<WorkflowListViewProps> = ({
     </div>
 
     {activeTab === 'templates' ? (
-      <div className="flex-1 overflow-y-auto w-full">
-        <Templates onUseTemplate={onUseTemplate} />
-      </div>
+      <Templates onUseTemplate={onUseTemplate} />
     ) : (
       <>
         {/* Filters */}
